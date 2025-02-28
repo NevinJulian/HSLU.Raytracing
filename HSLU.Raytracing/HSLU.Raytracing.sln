@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TripleCricle", "TripleCricl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoubleSphere", "DoubleSphere\DoubleSphere.csproj", "{5F705D5F-EDFA-494F-BC8D-34D1BA181CBC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SphereSculpture", "SphereSculpture\SphereSculpture.csproj", "{70E90693-1AF4-4404-8CEC-AA8FBF51BD9E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{5F705D5F-EDFA-494F-BC8D-34D1BA181CBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F705D5F-EDFA-494F-BC8D-34D1BA181CBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F705D5F-EDFA-494F-BC8D-34D1BA181CBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70E90693-1AF4-4404-8CEC-AA8FBF51BD9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70E90693-1AF4-4404-8CEC-AA8FBF51BD9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70E90693-1AF4-4404-8CEC-AA8FBF51BD9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70E90693-1AF4-4404-8CEC-AA8FBF51BD9E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
