@@ -1,12 +1,12 @@
 ﻿namespace Common;
 
-public readonly struct Vector3D(int x, int y, int z)
+public readonly struct Vector3D(float x, float y, float z)
 {
-    public readonly int X => x;
+    public readonly float X => x;
 
-    public readonly int Y => y;
+    public readonly float Y => y;
 
-    public readonly int Z => z;
+    public readonly float Z => z;
 
     public float Length => MathF.Sqrt(this.LengthSquared);
 
@@ -27,5 +27,13 @@ public readonly struct Vector3D(int x, int y, int z)
     public float ScalarProduct(Vector3D other) => (this.X * other.X) + (this.Y * other.Y) + (this.Z * other.Z);
 
     public float ScalarProduct(Vector3D other, float angle) => this.Length * other.Length * MathF.Cos(angle);
+
+    public Vector3D Normalize()
+    {
+        var length = this.Length;
+        return new Vector3D(X / length, Y / length, Z / length);
+    }
+
+    public float DotProduct(Vector3D other) => (this.X * other.X) + (this.Y * other.Y) + (this.Z * other.Z);
 }
 

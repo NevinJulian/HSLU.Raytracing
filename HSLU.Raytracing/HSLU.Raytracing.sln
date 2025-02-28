@@ -15,6 +15,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VectorSphere3D", "VectorSph
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{79305C7B-4E62-4D68-8E6D-D17231106052}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TripleCricle", "TripleCricle\TripleCricle.csproj", "{707328A5-A6FF-4A6B-A124-2B7703A30013}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoubleSphere", "DoubleSphere\DoubleSphere.csproj", "{5F705D5F-EDFA-494F-BC8D-34D1BA181CBC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +49,14 @@ Global
 		{79305C7B-4E62-4D68-8E6D-D17231106052}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{79305C7B-4E62-4D68-8E6D-D17231106052}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{79305C7B-4E62-4D68-8E6D-D17231106052}.Release|Any CPU.Build.0 = Release|Any CPU
+		{707328A5-A6FF-4A6B-A124-2B7703A30013}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{707328A5-A6FF-4A6B-A124-2B7703A30013}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{707328A5-A6FF-4A6B-A124-2B7703A30013}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{707328A5-A6FF-4A6B-A124-2B7703A30013}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F705D5F-EDFA-494F-BC8D-34D1BA181CBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F705D5F-EDFA-494F-BC8D-34D1BA181CBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F705D5F-EDFA-494F-BC8D-34D1BA181CBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F705D5F-EDFA-494F-BC8D-34D1BA181CBC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
