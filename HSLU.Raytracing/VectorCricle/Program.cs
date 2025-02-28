@@ -1,7 +1,5 @@
 ﻿using SkiaSharp;
-using System.Drawing;
-using System.Numerics;
-using VectorCricle;
+using Common;
 
 const int width = 800;
 const int height = 500;
