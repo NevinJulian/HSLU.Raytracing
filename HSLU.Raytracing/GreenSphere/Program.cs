@@ -6,13 +6,20 @@ const int width = 800;
 const int height = 600;
 const string filePath = "spheres.png";
 
-var lightSource = new Vector3D(width / 2, height / 2, 1000);
+// Move the light source to the top-left
+var lightSource = new Vector3D(100, 100, 500);
 
 var spheres = new List<Sphere>
 {
-    new Sphere(new Vector3D(width / 2, height / 2, 50), 200, MyColor.Blue),
-    new Sphere(new Vector3D(width / 2 - 70, height / 2 - 70, 110), 130, new MyColor(0, 255, 255))
+    new Sphere(new Vector3D(width / 2, height / 2, 50), 200, new MyColor(0, 255, 0))
 };
+
+float AdjustBrightness(float baseBrightness, float factor)
+{
+    return Math.Clamp(baseBrightness * factor, 0, 1);
+}
+
+float brightnessFactor = 1.2f; // Increased brightness factor for sunrise effect
 
 using (var image = new Image<Rgba32>(width, height))
 {
@@ -47,22 +54,25 @@ using (var image = new Image<Rgba32>(width, height))
                     {
                         maxDepth = pixelDepth;
                         double depthFactor = 1 - ((pixelDepth - 50) / 200.0);
-                        depthFactor = Math.Clamp(depthFactor, 0.7, 1.0);
+                        depthFactor = Math.Clamp(depthFactor, 0.5, 1.0);
 
-                        Vector3D normal = (rayOrigin + rayDirection * pixelDepth - sphere.Center).Normalize();
-                        double shading = 0.5 + 0.5 * normal.Z;
-                        double brightness = depthFactor * shading;
+                        Vector3D hitPoint = rayOrigin + rayDirection * pixelDepth;
+                        Vector3D normal = (hitPoint - sphere.Center).Normalize();
 
-                        if (spheres[1] == sphere && spheres[0].IsInSphere(pixel) && pixelDepth <= spheres[0].Center.Z)
-                        {
-                            continue;
-                        }
+                        // Compute light direction from the hit point to the light source
+                        Vector3D lightDir = (lightSource - hitPoint).Normalize();
+                        double shading = Math.Max(0, normal.Dot(lightDir));
 
-                        byte r = (byte)Math.Min(sphere.Color.R * brightness, 255);
-                        byte g = (byte)Math.Min(sphere.Color.G * brightness, 255);
-                        byte b2 = (byte)Math.Min(sphere.Color.B * brightness, 255);
+                        // Adjust shading dynamically based on brightnessFactor to reveal more of the sphere
+                        double shadowFactor = Math.Pow(shading, 1.1) * brightnessFactor; // Soft exponential fade
+                        double visibilityFactor = Math.Clamp(shadowFactor + (brightnessFactor - 1) * 0.5, 0, 1);
+                        double brightness = AdjustBrightness((float)(depthFactor * visibilityFactor), brightnessFactor);
 
-                        finalColor = new Rgba32(r, g, b2);
+                        byte red = (byte)Math.Min(sphere.Color.R * brightness, 255);
+                        byte green = (byte)Math.Min(sphere.Color.G * brightness, 255);
+                        byte blue = (byte)Math.Min(sphere.Color.B * brightness, 255);
+
+                        finalColor = new Rgba32(red, green, blue);
                         pixelRendered = true;
                     }
                 }

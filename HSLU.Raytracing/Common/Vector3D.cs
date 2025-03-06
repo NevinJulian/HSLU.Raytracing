@@ -18,6 +18,8 @@ public readonly struct Vector3D(float x, float y, float z)
 
     public static Vector3D operator *(Vector3D a, int scalar) => new(a.X * scalar, a.Y * scalar, a.Z * scalar);
 
+    public static Vector3D operator *(Vector3D a, double scalar) => new((float)(a.X * scalar), (float)(a.Y * scalar), (float)(a.Z * scalar));
+
     public readonly float EuclideanDistance(Vector3D other)
     {
         var distance = this - other;
@@ -34,6 +36,6 @@ public readonly struct Vector3D(float x, float y, float z)
         return new Vector3D(X / length, Y / length, Z / length);
     }
 
-    public float DotProduct(Vector3D other) => (this.X * other.X) + (this.Y * other.Y) + (this.Z * other.Z);
+    public float Dot(Vector3D other) => (this.X * other.X) + (this.Y * other.Y) + (this.Z * other.Z);
 }
 
