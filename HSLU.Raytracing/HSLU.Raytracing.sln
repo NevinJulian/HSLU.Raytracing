@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoubleSphere", "DoubleSpher
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SphereSculpture", "SphereSculpture\SphereSculpture.csproj", "{70E90693-1AF4-4404-8CEC-AA8FBF51BD9E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SphereSculpture10k", "SphereSculpture10k\SphereSculpture10k.csproj", "{3D1A0795-73D3-49A0-9336-0E7F982765B7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{70E90693-1AF4-4404-8CEC-AA8FBF51BD9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70E90693-1AF4-4404-8CEC-AA8FBF51BD9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70E90693-1AF4-4404-8CEC-AA8FBF51BD9E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D1A0795-73D3-49A0-9336-0E7F982765B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D1A0795-73D3-49A0-9336-0E7F982765B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D1A0795-73D3-49A0-9336-0E7F982765B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D1A0795-73D3-49A0-9336-0E7F982765B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
