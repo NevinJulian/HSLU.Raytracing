@@ -1,10 +1,22 @@
 ﻿namespace Common;
 
-public readonly struct Vector2D(int x, int y)
+public readonly struct Vector2D
 {
-    public readonly int X => x;
+    public readonly float X { get; }
 
-    public readonly int Y => y;
+    public readonly float Y { get; }
+
+    public Vector2D(int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+
+    public Vector2D(float x, float y)
+    {
+        X = (int)x;
+        Y = (int)y;
+    }
 
     public double Length => Math.Sqrt(X * X + Y * Y);
 
