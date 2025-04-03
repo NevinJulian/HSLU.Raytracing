@@ -48,5 +48,11 @@
 
             return (true, intersection);
         }
+
+        public Vector3D GetNormal(Vector3D intersectionPoint)
+        {
+            // For a plane, the normal is constant
+            return Normal;
+        }
     }
 }

@@ -23,5 +23,37 @@ public class MyColor
         G = g;
         B = b;
     }
+
+    public static MyColor operator *(MyColor color, float scalar)
+    {
+        return new MyColor(
+            (int)Math.Clamp(color.R * scalar, 0, 255),
+            (int)Math.Clamp(color.G * scalar, 0, 255),
+            (int)Math.Clamp(color.B * scalar, 0, 255)
+        );
+    }
+
+    public static MyColor operator *(float scalar, MyColor color)
+    {
+        return color * scalar;
+    }
+
+    public static MyColor operator +(MyColor a, MyColor b)
+    {
+        return new MyColor(
+            Math.Clamp(a.R + b.R, 0, 255),
+            Math.Clamp(a.G + b.G, 0, 255),
+            Math.Clamp(a.B + b.B, 0, 255)
+        );
+    }
+
+    public static MyColor operator *(MyColor a, MyColor b)
+    {
+        return new MyColor(
+            (int)Math.Clamp((a.R * b.R) / 255f, 0, 255),
+            (int)Math.Clamp((a.G * b.G) / 255f, 0, 255),
+            (int)Math.Clamp((a.B * b.B) / 255f, 0, 255)
+        );
+    }
 }
 

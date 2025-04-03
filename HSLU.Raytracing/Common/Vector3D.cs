@@ -26,6 +26,7 @@ public readonly struct Vector3D
 
     public static Vector3D operator +(Vector3D a, Vector3D b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
     public static Vector3D operator -(Vector3D a, Vector3D b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+    public static Vector3D operator -(Vector3D a) => new(-a.X, -a.Y, -a.Z);
     public static Vector3D operator *(Vector3D a, int scalar) => new(a.X * scalar, a.Y * scalar, a.Z * scalar);
     public static Vector3D operator *(Vector3D a, float scalar) => new(a.X * scalar, a.Y * scalar, a.Z * scalar);
     public static Vector3D operator *(Vector3D a, double scalar) => new(a.X * (float)scalar, a.Y * (float)scalar, a.Z * (float)scalar);
@@ -41,11 +42,16 @@ public readonly struct Vector3D
 
     public Vector3D Normalize()
     {
-        var length = this.Length;
+        var length = Length;
+        if (length < float.Epsilon)
+            return new Vector3D(0, 0, 0);
+
         return new Vector3D(X / length, Y / length, Z / length);
     }
 
     public float Dot(Vector3D other) => (this.X * other.X) + (this.Y * other.Y) + (this.Z * other.Z);
+
+    public float Dot(Vector3D other, float angle) => Length * other.Length * MathF.Cos(angle);
 
     // Cross product method for calculating normal vectors
     public Vector3D Cross(Vector3D other) => new(
@@ -53,4 +59,6 @@ public readonly struct Vector3D
         (Z * other.X) - (X * other.Z),
         (X * other.Y) - (Y * other.X)
     );
+
+    public override string ToString() => $"({X}, {Y}, {Z})";
 }

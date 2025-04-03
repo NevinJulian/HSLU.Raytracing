@@ -1,100 +1,12 @@
 ﻿namespace Common
 {
-    public class Triangle
-    {
-        public Vector3D V1 { get; }
-        public Vector3D V2 { get; }
-        public Vector3D V3 { get; }
-        public Vector3D Normal { get; }
-
-        public Triangle(Vector3D v1, Vector3D v2, Vector3D v3)
-        {
-            V1 = v1;
-            V2 = v2;
-            V3 = v3;
-
-            // Calculate normal using cross product
-            Vector3D edge1 = new Vector3D(V2.X - V1.X, V2.Y - V1.Y, V2.Z - V1.Z);
-            Vector3D edge2 = new Vector3D(V3.X - V1.X, V3.Y - V1.Y, V3.Z - V1.Z);
-
-            // Calculate the cross product
-            Vector3D crossProduct = edge1.Cross(edge2);
-
-            // Normalize
-            Normal = new Vector3D(
-                crossProduct.X / crossProduct.Length,
-                crossProduct.Y / crossProduct.Length,
-                crossProduct.Z / crossProduct.Length
-            );
-        }
-
-        public (bool hit, Vector3D intersection) IntersectRay(Vector3D rayOrigin, Vector3D rayDirection)
-        {
-            // Using formula from the slides - ray-plane intersection
-            // Check if ray and plane are parallel
-            float dotProduct = Normal.Dot(rayDirection);
-
-            // If close to zero, ray is parallel to the plane
-            if (Math.Abs(dotProduct) < 1e-6)
-            {
-                return (false, new Vector3D(0, 0, 0));
-            }
-
-            // Calculate t (lambda) using the formula from slide 8
-            Vector3D toPoint = new Vector3D(V1.X - rayOrigin.X, V1.Y - rayOrigin.Y, V1.Z - rayOrigin.Z);
-            float t = Normal.Dot(toPoint) / dotProduct;
-
-            // If t is negative, intersection is behind the ray origin
-            if (t < 0)
-            {
-                return (false, new Vector3D(0, 0, 0));
-            }
-
-            // Calculate intersection point
-            Vector3D intersection = new Vector3D(
-                rayOrigin.X + t * rayDirection.X,
-                rayOrigin.Y + t * rayDirection.Y,
-                rayOrigin.Z + t * rayDirection.Z
-            );
-
-            // Check if intersection point is inside the triangle using barycentric coordinates
-            bool insideTriangle = IsPointInTriangle(intersection, V1, V2, V3);
-
-            return (insideTriangle, intersection);
-        }
-
-        private bool IsPointInTriangle(Vector3D p, Vector3D a, Vector3D b, Vector3D c)
-        {
-            // Using method 1 from slide 9 (barycentric coordinates)
-            // Calculate vectors from point to vertices
-            Vector3D v0 = c - a;
-            Vector3D v1 = b - a;
-            Vector3D v2 = p - a;
-
-            // Compute dot products
-            float dot00 = v0.Dot(v0);
-            float dot01 = v0.Dot(v1);
-            float dot02 = v0.Dot(v2);
-            float dot11 = v1.Dot(v1);
-            float dot12 = v1.Dot(v2);
-
-            // Compute barycentric coordinates
-            float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
-            float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-            float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
-
-            // Check if point is inside triangle
-            return (u >= 0) && (v >= 0) && (u + v <= 1);
-        }
-    }
-
-    public class Cube
+    public class Cube : IRaycastable
     {
         public Vector3D Center { get; }
         public float Size { get; } // Length of one side
         public MyColor Color { get; }
-        private List<Triangle> Faces { get; }
         public float RotationAngle { get; } // Rotation angle in degrees
+        private List<Triangle> Faces { get; }
 
         public Cube(Vector3D center, float size, MyColor color, float rotationAngle = 0f)
         {
@@ -111,51 +23,54 @@
             float halfSize = Size / 2f;
 
             // Create 8 corners of the cube (unrotated)
-            Vector3D[] corners = new Vector3D[8];
-            corners[0] = new Vector3D(Center.X - halfSize, Center.Y - halfSize, Center.Z - halfSize);
-            corners[1] = new Vector3D(Center.X + halfSize, Center.Y - halfSize, Center.Z - halfSize);
-            corners[2] = new Vector3D(Center.X + halfSize, Center.Y + halfSize, Center.Z - halfSize);
-            corners[3] = new Vector3D(Center.X - halfSize, Center.Y + halfSize, Center.Z - halfSize);
-            corners[4] = new Vector3D(Center.X - halfSize, Center.Y - halfSize, Center.Z + halfSize);
-            corners[5] = new Vector3D(Center.X + halfSize, Center.Y - halfSize, Center.Z + halfSize);
-            corners[6] = new Vector3D(Center.X + halfSize, Center.Y + halfSize, Center.Z + halfSize);
-            corners[7] = new Vector3D(Center.X - halfSize, Center.Y + halfSize, Center.Z + halfSize);
+            List<Vector3D> corners = new List<Vector3D>
+            {
+                new Vector3D(Center.X - halfSize, Center.Y - halfSize, Center.Z - halfSize), // 0
+                new Vector3D(Center.X + halfSize, Center.Y - halfSize, Center.Z - halfSize), // 1
+                new Vector3D(Center.X + halfSize, Center.Y + halfSize, Center.Z - halfSize), // 2
+                new Vector3D(Center.X - halfSize, Center.Y + halfSize, Center.Z - halfSize), // 3
+                new Vector3D(Center.X - halfSize, Center.Y - halfSize, Center.Z + halfSize), // 4
+                new Vector3D(Center.X + halfSize, Center.Y - halfSize, Center.Z + halfSize), // 5
+                new Vector3D(Center.X + halfSize, Center.Y + halfSize, Center.Z + halfSize), // 6
+                new Vector3D(Center.X - halfSize, Center.Y + halfSize, Center.Z + halfSize)  // 7
+            };
 
             // Apply rotation to each corner
             if (RotationAngle != 0)
             {
-                for (int i = 0; i < corners.Length; i++)
+                for (int i = 0; i < corners.Count; i++)
                 {
                     corners[i] = RotatePoint(corners[i], Center, RotationAngle);
                 }
             }
 
             // Create 12 triangles (2 for each face of the cube)
-            var triangles = new List<Triangle>();
-
-            // Front face
-            triangles.Add(new Triangle(corners[0], corners[1], corners[2]));
-            triangles.Add(new Triangle(corners[0], corners[2], corners[3]));
-
-            // Back face
-            triangles.Add(new Triangle(corners[4], corners[6], corners[5]));
-            triangles.Add(new Triangle(corners[4], corners[7], corners[6]));
-
-            // Left face
-            triangles.Add(new Triangle(corners[0], corners[3], corners[7]));
-            triangles.Add(new Triangle(corners[0], corners[7], corners[4]));
-
-            // Right face
-            triangles.Add(new Triangle(corners[1], corners[5], corners[6]));
-            triangles.Add(new Triangle(corners[1], corners[6], corners[2]));
-
-            // Bottom face
-            triangles.Add(new Triangle(corners[0], corners[4], corners[5]));
-            triangles.Add(new Triangle(corners[0], corners[5], corners[1]));
-
-            // Top face
-            triangles.Add(new Triangle(corners[3], corners[2], corners[6]));
-            triangles.Add(new Triangle(corners[3], corners[6], corners[7]));
+            var triangles = new List<Triangle>
+            {
+                // Front face (facing negative Z)
+                new Triangle(corners[0], corners[1], corners[2], Color),
+                new Triangle(corners[0], corners[2], corners[3], Color),
+                
+                // Back face (facing positive Z)
+                new Triangle(corners[4], corners[6], corners[5], Color),
+                new Triangle(corners[4], corners[7], corners[6], Color),
+                
+                // Left face (facing negative X)
+                new Triangle(corners[0], corners[3], corners[7], Color),
+                new Triangle(corners[0], corners[7], corners[4], Color),
+                
+                // Right face (facing positive X)
+                new Triangle(corners[1], corners[5], corners[6], Color),
+                new Triangle(corners[1], corners[6], corners[2], Color),
+                
+                // Bottom face (facing negative Y)
+                new Triangle(corners[0], corners[4], corners[5], Color),
+                new Triangle(corners[0], corners[5], corners[1], Color),
+                
+                // Top face (facing positive Y)
+                new Triangle(corners[3], corners[2], corners[6], Color),
+                new Triangle(corners[3], corners[6], corners[7], Color)
+            };
 
             return triangles;
         }
@@ -178,8 +93,8 @@
             float newX = x * cosA - z * sinA;
             float newZ = x * sinA + z * cosA;
 
-            // Rotate around X-axis (horizontal axis) - adding a slight tilt
-            float tiltAngle = 15f * (float)Math.PI / 180f; // 15 degrees tilt
+            // Also add a moderate tilt around X-axis (15 degrees) for better visibility
+            float tiltAngle = 15f * (float)Math.PI / 180f;
             float cosT = (float)Math.Cos(tiltAngle);
             float sinT = (float)Math.Sin(tiltAngle);
 
@@ -194,33 +109,53 @@
             );
         }
 
-        public (bool hit, float depth, Vector3D normal) IntersectRay(Vector2D pixel)
+        public (bool hasHit, float intersectionDistance) Intersect(Ray ray)
         {
-            bool hit = false;
-            float maxDepth = float.NegativeInfinity;
-            Vector3D hitNormal = new Vector3D(0, 0, 0);
+            bool hasHit = false;
+            float closestDistance = float.MaxValue;
 
-            // Create a ray from the pixel into the scene
-            Vector3D rayOrigin = new Vector3D(pixel.X, pixel.Y, 0);
-            Vector3D rayDirection = new Vector3D(0, 0, 1); // Looking along the z-axis
-
+            // Check intersection with each face
             foreach (var triangle in Faces)
             {
-                var (triangleHit, intersectionPoint) = triangle.IntersectRay(rayOrigin, rayDirection);
+                var (triangleHit, distance) = triangle.Intersect(ray);
 
-                if (triangleHit)
+                // Use a tiny epsilon to avoid precision issues
+                if (triangleHit && distance > 0.0001f && distance < closestDistance)
                 {
-                    float depth = intersectionPoint.Z;
-                    if (depth > maxDepth)
-                    {
-                        hit = true;
-                        maxDepth = depth;
-                        hitNormal = triangle.Normal;
-                    }
+                    hasHit = true;
+                    closestDistance = distance;
                 }
             }
 
-            return (hit, maxDepth, hitNormal);
+            return (hasHit, closestDistance);
+        }
+
+        public Vector3D GetNormal(Vector3D intersectionPoint)
+        {
+            // Find which triangle was hit
+            Triangle closestTriangle = null;
+            float minDistance = float.MaxValue;
+
+            foreach (var triangle in Faces)
+            {
+                // Calculate the distance to the triangle's plane
+                float distance = Math.Abs(triangle.Normal.Dot(intersectionPoint - triangle.V1));
+
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestTriangle = triangle;
+                }
+            }
+
+            // Return the normal of the closest triangle
+            if (closestTriangle != null)
+            {
+                return closestTriangle.Normal;
+            }
+
+            // Fallback (shouldn't happen)
+            return new Vector3D(0, 0, 1);
         }
     }
 }
