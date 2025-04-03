@@ -5,64 +5,85 @@ using static Common.RayTracer;
 
 const int width = 800;
 const int height = 600;
-const string filePath = "dramatic_shadows.png";
+const string filePath = "room_scene_with_shadows.png";
 
-// Create a visible floor that extends toward the camera
-var floorPlane1 = new Triangle(
-    new Vector3D(0, 400, 0),          // Close to camera
-    new Vector3D(800, 400, 0),
-    new Vector3D(0, 400, 250),        // Far away
-    new MyColor(230, 230, 230)        // Very light gray to show shadows clearly
+// Create a back wall (at Z=600, similar to the working implementation)
+var backWall1 = new Triangle(
+    new Vector3D(0, 600, 600),         // Top-left
+    new Vector3D(800, 600, 600),       // Top-right
+    new Vector3D(0, 0, 600),           // Bottom-left
+    new MyColor(100, 100, 200)         // Light blue
 );
 
-var floorPlane2 = new Triangle(
-    new Vector3D(800, 400, 0),
-    new Vector3D(800, 400, 250),
-    new Vector3D(0, 400, 250),
-    new MyColor(230, 230, 230)
+var backWall2 = new Triangle(
+    new Vector3D(800, 600, 600),       // Top-right
+    new Vector3D(800, 0, 600),         // Bottom-right
+    new Vector3D(0, 0, 600),           // Bottom-left
+    new MyColor(100, 100, 200)         // Light blue
 );
 
-// Position objects higher above the floor to cast longer shadows
+// Add a floor plane (bottom of room)
+var floor1 = new Triangle(
+    new Vector3D(0, 600, 0),           // Back-left
+    new Vector3D(800, 600, 0),         // Back-right
+    new Vector3D(0, 600, 600),         // Front-left
+    new MyColor(180, 180, 180)         // Light gray floor
+);
+
+var floor2 = new Triangle(
+    new Vector3D(800, 600, 0),         // Back-right
+    new Vector3D(800, 600, 600),       // Front-right
+    new Vector3D(0, 600, 600),         // Front-left
+    new MyColor(180, 180, 180)         // Light gray floor
+);
+
+// Position sphere and cube in the room
 var sphere = new Sphere(
-    new Vector3D(500f, 250f, 150f),   // Higher position
-    80,                               // Size
-    new MyColor(0, 120, 0)            // Dark green
+    new Vector3D(400, 300, 400),       // Left side of room
+    100,                               // Size
+    new MyColor(0, 150, 0)             // Green
 );
 
-// Make the cube larger and higher
 var cube = new Cube(
-    new Vector3D(250f, 250f, 150f),   // Higher position
-    80f,                              // Size
-    new MyColor(20, 20, 150),         // Dark blue
-    30f                               // Rotation angle
+    new Vector3D(100, 300, 200),       // Right side of room
+    80f,                               // Size
+    new MyColor(20, 20, 150),          // Dark blue
+    30f                                // Rotation angle
 );
 
-// Create a single, strong directional light positioned to create long shadows
+// Create light sources positioned as in the working implementation
 var lights = new List<LightSource>
 {
     new LightSource(
-        new Vector3D(400, 100, 50),    // Light is above and slightly behind
-        2.5f,                          // Very bright
-        new MyColor(255, 255, 255)     // White light
+        new Vector3D(400, 0, -250),    // Same as working example
+        1.0f,
+        new MyColor(128, 128, 128)     // Medium gray (equivalent to 0.5, 0.5, 0.5 in the example)
+    ),
+    new LightSource(
+        new Vector3D(0, -500, -500),   // Same as working example
+        0.8f,
+        new MyColor(153, 153, 128)     // Equivalent to (0.6, 0.6, 0.5)
     )
 };
 
-// Only include the floor and objects
+// Scene with all objects
 var sceneObjects = new List<IRaycastable>
 {
-    floorPlane1,
-    floorPlane2,
+    backWall1,
+    backWall2,
+    floor1,
+    floor2,
     sphere,
     cube
 };
 
-// Create render settings with minimal ambient light to emphasize shadows
+// Create render settings similar to what might be in the working implementation
 var renderSettings = new RenderSettings
 {
-    BackgroundColor = new MyColor(30, 30, 40),    // Dark blue-gray background
-    AmbientLight = new MyColor(15, 15, 20),       // Very low ambient for stark shadows
-    SpecularPower = 64.0f,                        // Very sharp highlights
-    SpecularIntensity = 1.0f                      // Maximum specular intensity
+    BackgroundColor = new MyColor(30, 30, 40),    // Dark background
+    AmbientLight = new MyColor(60, 60, 60),       // Medium ambient light (allows some detail in shadows)
+    SpecularPower = 40.0f,
+    SpecularIntensity = 0.7f
 };
 
 // Create ray tracer
@@ -76,7 +97,7 @@ using (var image = new Image<Rgba32>(width, height))
     {
         for (int x = 0; x < width; x++)
         {
-            // Create ray for this pixel
+            // Create ray for this pixel - identical to the working example
             var ray = new Ray(
                 new Vector3D(x, y, 0),
                 new Vector3D(0, 0, 1)

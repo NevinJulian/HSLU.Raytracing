@@ -1,10 +1,12 @@
-﻿namespace Common
+﻿using System;
+
+namespace Common
 {
     public class Triangle : IRaycastable
     {
-        public Vector3D V1 { get; } // Renamed A to V1 to keep your naming convention
-        public Vector3D V2 { get; } // Renamed B to V2
-        public Vector3D V3 { get; } // Renamed C to V3
+        public Vector3D V1 { get; }
+        public Vector3D V2 { get; }
+        public Vector3D V3 { get; }
         public MyColor Color { get; }
         public Vector3D Normal { get; }
 
@@ -15,7 +17,7 @@
             V3 = v3;
             Color = color;
 
-            // Calculate normal using cross product (similar to working example)
+            // Calculate face normal using cross product
             Vector3D edge1 = V2 - V1;
             Vector3D edge2 = V3 - V1;
             Normal = edge1.Cross(edge2).Normalize();
@@ -23,67 +25,48 @@
 
         public (bool hasHit, float intersectionDistance) Intersect(Ray ray)
         {
-            // Using the approach from the working example
-            var lambda = CalculateLambda(ray);
+            // Use a slightly larger epsilon for better numerical stability
+            const float EPSILON = 0.000001f;
 
-            if (lambda > 0)
-            {
-                // Calculate intersection point
-                Vector3D q = ray.Origin + ray.Direction * lambda;
+            // Implement Möller–Trumbore algorithm
+            Vector3D edge1 = V2 - V1;
+            Vector3D edge2 = V3 - V1;
+            Vector3D h = ray.Direction.Cross(edge2);
+            float a = edge1.Dot(h);
 
-                // Vectors from intersection point to triangle vertices
-                Vector3D aq = q - V1;
-                Vector3D bq = q - V2;
-                Vector3D cq = q - V3;
+            // Check if ray is parallel to triangle (or nearly so)
+            if (Math.Abs(a) < EPSILON)
+                return (false, float.MaxValue);
 
-                // Vectors along triangle edges (in opposite direction)
-                Vector3D ba = V1 - V2;
-                Vector3D cb = V2 - V3;
-                Vector3D ac = V3 - V1;
+            float f = 1.0f / a;
+            Vector3D s = ray.Origin - V1;
+            float u = f * s.Dot(h);
 
-                // Cross products to check orientation
-                Vector3D v1 = bq.Cross(ba);
-                Vector3D v2 = cq.Cross(cb);
-                Vector3D v3 = aq.Cross(ac);
+            // If intersection is outside first edge
+            if (u < 0.0f || u > 1.0f)
+                return (false, float.MaxValue);
 
-                // Check if point is inside triangle
-                if (CheckEqualSign(v1.Z, v2.Z, v3.Z))
-                {
-                    return (true, lambda);
-                }
-            }
+            Vector3D q = s.Cross(edge1);
+            float v = f * ray.Direction.Dot(q);
 
+            // If intersection is outside second or third edge
+            if (v < 0.0f || u + v > 1.0f)
+                return (false, float.MaxValue);
+
+            // Calculate intersection distance
+            float t = f * edge2.Dot(q);
+
+            // Valid intersection (must be in front of the ray origin)
+            if (t > EPSILON)
+                return (true, t);
+
+            // No intersection or behind ray origin
             return (false, float.MaxValue);
-        }
-
-        private float CalculateLambda(Ray ray)
-        {
-            Vector3D p = ray.Origin;
-            Vector3D u = ray.Direction;
-
-            // Calculate denominator for plane intersection
-            float denominator = u.Dot(Normal);
-
-            // Check if ray is parallel to plane
-            if (Math.Abs(denominator) < 1e-6f)
-                return float.MaxValue;
-
-            // Calculate distance to intersection
-            float lambda = (V1 - p).Dot(Normal) / denominator;
-
-            // Return only positive intersections
-            return lambda > 0 ? lambda : float.MaxValue;
-        }
-
-        private bool CheckEqualSign(float v1z, float v2z, float v3z)
-        {
-            // All values must have the same sign (either all positive or all negative)
-            return (v1z >= 0 && v2z >= 0 && v3z >= 0) || (v1z < 0 && v2z < 0 && v3z < 0);
         }
 
         public Vector3D GetNormal(Vector3D intersectionPoint)
         {
-            // For a triangle, the normal is constant
+            // For a flat triangle, normal is the same at any point
             return Normal;
         }
     }
