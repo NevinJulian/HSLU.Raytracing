@@ -68,12 +68,6 @@
             Vector3D hitPoint = hitInfo.HitPoint;
             Vector3D normal = hitInfo.Normal;
 
-            // Ensure the normal faces toward the viewer
-            if (normal.Dot(ray.Direction) > 0)
-            {
-                normal = -normal; // Flip the normal if it points away from viewer
-            }
-
             // Start with ambient light component
             MyColor ambient = material.Ambient;
             int red = ambient.R;
@@ -87,23 +81,21 @@
                 float lightDistance = lightVector.Length;
                 Vector3D lightDirection = lightVector * (1.0f / lightDistance); // Normalize
 
-                // Only calculate lighting if normal faces the light
+                // Calculate dot product with normal (but don't skip negative values yet)
                 float cosAngle = normal.Dot(lightDirection);
-                if (cosAngle <= 0)
-                    continue; // Skip back-facing surfaces
 
-                // Use a modified shadow test with robust offset
+                // Use the robust shadow test that fixes artifacts
                 bool inShadow = IsPointInShadow(hitPoint, normal, lightDirection, lightDistance, obj.ObjectId);
 
                 if (!inShadow)
                 {
-                    // Use a more physically accurate lighting model
-                    float diffuse = cosAngle;
+                    // Calculate diffuse lighting using Lambert's cosine law - same as original
+                    float diffuseFactor = MathF.Max(0, cosAngle);
 
-                    // Add color contribution
-                    red += (int)(material.Diffuse.R * diffuse * light.Intensity * light.Color.R / 255.0f);
-                    green += (int)(material.Diffuse.G * diffuse * light.Intensity * light.Color.G / 255.0f);
-                    blue += (int)(material.Diffuse.B * diffuse * light.Intensity * light.Color.B / 255.0f);
+                    // IMPORTANT: Use obj.Color instead of material.Diffuse to match original colors
+                    red += (int)(obj.Color.R * light.Intensity * diffuseFactor * light.Color.R / 255.0f);
+                    green += (int)(obj.Color.G * light.Intensity * diffuseFactor * light.Color.G / 255.0f);
+                    blue += (int)(obj.Color.B * light.Intensity * diffuseFactor * light.Color.B / 255.0f);
                 }
             }
 
