@@ -49,3 +49,6 @@ Creating composite objects by arranging primitives to form more complex structur
 ![3D Geometric Scene](Images/room_scene_with_shadows.png)
 
 The culmination of the project featuring different primitive types (sphere and cube), with proper shadow casting, demonstrating a complete raytracing implementation.
+
+### Stage 10: Reflection Scene
+![3D Geometric Scene](Images/reflection_scene.png)

@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpheresAndCube", "SpheresAn
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShadowCubeSphere", "ShadowCubeSphere\ShadowCubeSphere.csproj", "{10EC04FB-6AF7-4DB1-A479-AB50CE799C38}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReflectionSphere", "ReflectionSphere\ReflectionSphere.csproj", "{77B0BAA4-B000-418B-9005-C66F1C605A94}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,10 @@ Global
 		{10EC04FB-6AF7-4DB1-A479-AB50CE799C38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10EC04FB-6AF7-4DB1-A479-AB50CE799C38}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10EC04FB-6AF7-4DB1-A479-AB50CE799C38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77B0BAA4-B000-418B-9005-C66F1C605A94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77B0BAA4-B000-418B-9005-C66F1C605A94}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77B0BAA4-B000-418B-9005-C66F1C605A94}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77B0BAA4-B000-418B-9005-C66F1C605A94}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
