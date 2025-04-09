@@ -6,6 +6,7 @@
         private readonly List<Light> lights;
         private static readonly MyColor BACKGROUND_COLOR = MyColor.Black;
         private int maxReflectionDepth = 10; // Default value
+        private int nextObjectId = 0;
 
         public Scene()
         {
@@ -15,6 +16,7 @@
 
         public void AddObject(IRaycastable obj)
         {
+            obj.ObjectId = nextObjectId++;
             objects.Add(obj);
         }
 
@@ -47,7 +49,7 @@
             foreach (IRaycastable obj in objects)
             {
                 var (hasHit, distance) = obj.Intersect(ray);
-                if (hasHit && distance > 0.001f && distance < closestDistance)
+                if (hasHit && distance > 0.05f && distance < closestDistance)
                 {
                     Vector3D hitPoint = ray.GetPointAt(distance);
                     Vector3D normal = obj.GetNormal(hitPoint);
@@ -65,7 +67,12 @@
             Material material = obj.Material;
             Vector3D hitPoint = hitInfo.HitPoint;
             Vector3D normal = hitInfo.Normal;
-            Vector3D viewDirection = (ray.Origin - hitPoint).Normalize();
+
+            // Ensure the normal faces toward the viewer
+            if (normal.Dot(ray.Direction) > 0)
+            {
+                normal = -normal; // Flip the normal if it points away from viewer
+            }
 
             // Start with ambient light component
             MyColor ambient = material.Ambient;
@@ -73,24 +80,30 @@
             int green = ambient.G;
             int blue = ambient.B;
 
-            // Add contribution from each light source (simplified lighting model)
             foreach (Light light in lights)
             {
-                // Create a vector from the hit point to the light source
-                Vector3D lightDirection = (light.Position - hitPoint).Normalize();
+                // Calculate light vector and distance
+                Vector3D lightVector = light.Position - hitPoint;
+                float lightDistance = lightVector.Length;
+                Vector3D lightDirection = lightVector * (1.0f / lightDistance); // Normalize
 
-                // Check for shadows
-                bool inShadow = IsInShadow(hitPoint, lightDirection, light.Position);
+                // Only calculate lighting if normal faces the light
+                float cosAngle = normal.Dot(lightDirection);
+                if (cosAngle <= 0)
+                    continue; // Skip back-facing surfaces
+
+                // Use a modified shadow test with robust offset
+                bool inShadow = IsPointInShadow(hitPoint, normal, lightDirection, lightDistance, obj.ObjectId);
 
                 if (!inShadow)
                 {
-                    // Calculate diffuse lighting using Lambert's cosine law
-                    float diffuseFactor = MathF.Max(0, normal.Dot(lightDirection));
+                    // Use a more physically accurate lighting model
+                    float diffuse = cosAngle;
 
-                    // Simple diffuse lighting - using object's color directly
-                    red += (int)(obj.Color.R * light.Intensity * diffuseFactor * light.Color.R / 255.0f);
-                    green += (int)(obj.Color.G * light.Intensity * diffuseFactor * light.Color.G / 255.0f);
-                    blue += (int)(obj.Color.B * light.Intensity * diffuseFactor * light.Color.B / 255.0f);
+                    // Add color contribution
+                    red += (int)(material.Diffuse.R * diffuse * light.Intensity * light.Color.R / 255.0f);
+                    green += (int)(material.Diffuse.G * diffuse * light.Intensity * light.Color.G / 255.0f);
+                    blue += (int)(material.Diffuse.B * diffuse * light.Intensity * light.Color.B / 255.0f);
                 }
             }
 
@@ -125,25 +138,71 @@
             return incident - normal * (2 * dot);
         }
 
-        private bool IsInShadow(Vector3D hitPoint, Vector3D lightDirection, Vector3D lightPosition)
+        private bool IsInShadow(Vector3D hitPoint, Vector3D normal, Vector3D lightDirection, Vector3D lightPosition, int originObjectId)
         {
-            // Create a ray from hit point toward light
-            Ray shadowRay = new Ray(hitPoint, lightDirection);
+            // Use a more aggressive offset for shadow rays
+            float shadowBias = 0.15f;
 
-            // Calculate distance to light
-            float distanceToLight = (lightPosition - hitPoint).Length;
+            // Offset in both normal and light directions for maximum robustness
+            Vector3D offsetPoint = hitPoint + normal * shadowBias + lightDirection * 0.05f;
 
-            // Check if any object blocks the light
+            Ray shadowRay = new Ray(offsetPoint, lightDirection);
+            float distanceToLight = (lightPosition - offsetPoint).Length;
+
             foreach (IRaycastable obj in objects)
             {
+                // Skip the object that the ray hit originally
+                if (obj.ObjectId == originObjectId)
+                    continue;
+
+                // Skip triangles that belong to the same parent object (cube)
+                if (obj is Triangle triangle && triangle.ParentId == originObjectId)
+                    continue;
+
                 var (hasHit, distance) = obj.Intersect(shadowRay);
-                // Only count as shadow if the object is between the hit point and the light
                 if (hasHit && distance > 0.001f && distance < distanceToLight)
                 {
-                    return true; // This point is in shadow
+                    return true;
                 }
             }
             return false;
+        }
+
+        private bool IsPointInShadow(Vector3D hitPoint, Vector3D normal, Vector3D lightDir, float lightDistance, int sourceObjectId)
+        {
+            // Very robust offset calculations
+            const float BASE_EPSILON = 0.1f; // A larger base epsilon
+
+            // Calculate a robust offset that:
+            // 1. Is larger when the light direction is almost perpendicular to the normal
+            // 2. Has a minimum safe value based on scene scale
+            float cosAngle = Math.Max(0.01f, normal.Dot(lightDir)); // Avoid division by zero
+            float adaptiveOffset = BASE_EPSILON / cosAngle;
+            adaptiveOffset = Math.Min(adaptiveOffset, 0.5f); // Cap maximum offset
+
+            // Offset the ray origin along both normal and light direction
+            Vector3D offsetPoint = hitPoint + normal * adaptiveOffset + lightDir * 0.01f;
+
+            // Create a ray from the offset point toward the light
+            Ray shadowRay = new Ray(offsetPoint, lightDir);
+
+            // Test against all objects
+            foreach (IRaycastable obj in objects)
+            {
+                // Skip self-intersection
+                if (obj.ObjectId == sourceObjectId)
+                    continue;
+
+                var (hasHit, distance) = obj.Intersect(shadowRay);
+
+                // Only count intersections between us and the light
+                if (hasHit && distance > 0.001f && distance < lightDistance - adaptiveOffset)
+                {
+                    return true; // In shadow
+                }
+            }
+
+            return false; // Not in shadow
         }
 
         public void SetMaxReflectionDepth(int depth)

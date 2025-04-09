@@ -6,6 +6,7 @@
         public MyColor Color { get; }
         public Material Material { get; }
         public float Radius { get; }
+        public int ObjectId { get; set; }
 
         public Sphere(Vector3D center, float radius, MyColor color, MaterialType materialType = MaterialType.RED_PLASTIC, float reflectivity = 0f)
         {

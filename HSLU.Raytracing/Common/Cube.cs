@@ -6,6 +6,8 @@
         public float Size { get; }
         public MyColor Color { get; }
         public Material Material { get; }
+        public int ObjectId { get; set; }
+
         private readonly float RotationX;
         private readonly float RotationY;
         private readonly float RotationZ;
@@ -89,6 +91,26 @@
             result.Add(new Triangle(vertices[0], vertices[1], vertices[5], Material));
             result.Add(new Triangle(vertices[0], vertices[5], vertices[4], Material));
 
+            foreach (var triangle in result)
+            {
+                triangle.ParentId = this.ObjectId;
+            }
+
+            for (int i = 0; i < result.Count; i++)
+            {
+                // Make sure triangle normal points outward from cube center
+                Vector3D centroid = (result[i].V1 + result[i].V2 + result[i].V3) * (1.0f / 3.0f);
+                Vector3D toCenter = Center - centroid;
+
+                // If normal points toward center, flip it
+                if (result[i].Normal.Dot(toCenter) > 0)
+                {
+                    // Swap two vertices to flip the normal
+                    Vector3D temp = result[i].V2;
+                    result[i] = new Triangle(result[i].V1, result[i].V3, temp, result[i].Material);
+                }
+            }
+
             return result;
         }
 
@@ -136,9 +158,8 @@
 
             foreach (var triangle in Triangles)
             {
-                // Calculate distance to triangle (using centroid for simplicity)
-                Vector3D centroid = (triangle.V1 + triangle.V2 + triangle.V3) * (1.0f / 3.0f);
-                float distance = (centroid - intersectionPoint).Length;
+                // Calculate distance to triangle plane
+                float distance = Math.Abs(triangle.Normal.Dot(intersectionPoint - triangle.V1));
 
                 if (distance < minDistance)
                 {
@@ -147,8 +168,8 @@
                 }
             }
 
-            // Return normal of closest triangle
-            return closestTriangle?.Normal ?? new Vector3D(0, 1, 0);
+            // Return normal of closest triangle, ensuring it's properly normalized
+            return closestTriangle?.Normal.Normalize() ?? new Vector3D(0, 1, 0);
         }
     }
 }

@@ -8,6 +8,8 @@
         public MyColor Color { get; }
         public Material Material { get; }
         public Vector3D Normal { get; }
+        public int ObjectId { get; set; }
+        public int ParentId { get; set; } = -1; // -1 means no parent
 
         public Triangle(Vector3D v1, Vector3D v2, Vector3D v3, MyColor color, MaterialType materialType = MaterialType.WHITE_PLASTIC, float reflectivity = 0f)
         {

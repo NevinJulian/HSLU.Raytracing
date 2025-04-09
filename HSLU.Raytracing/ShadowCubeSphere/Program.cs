@@ -57,7 +57,7 @@ var lights = new List<Light>
         1.0f
     ),
     new Light(
-        new Vector3D(600, 700, -100),
+        new Vector3D(0, 700, -100),
         new MyColor(255, 255, 200),     // Warm light
         0.7f
     )
