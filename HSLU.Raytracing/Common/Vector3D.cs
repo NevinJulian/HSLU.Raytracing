@@ -27,18 +27,8 @@ public readonly struct Vector3D
     public static Vector3D operator +(Vector3D a, Vector3D b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
     public static Vector3D operator -(Vector3D a, Vector3D b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
     public static Vector3D operator -(Vector3D a) => new(-a.X, -a.Y, -a.Z);
-    public static Vector3D operator *(Vector3D a, int scalar) => new(a.X * scalar, a.Y * scalar, a.Z * scalar);
     public static Vector3D operator *(Vector3D a, float scalar) => new(a.X * scalar, a.Y * scalar, a.Z * scalar);
-    public static Vector3D operator *(Vector3D a, double scalar) => new(a.X * (float)scalar, a.Y * (float)scalar, a.Z * (float)scalar);
-
-    public readonly float EuclideanDistance(Vector3D other)
-    {
-        var distance = this - other;
-        return MathF.Sqrt(distance.X * distance.X + distance.Y * distance.Y + distance.Z * distance.Z);
-    }
-
-    public float ScalarProduct(Vector3D other) => (this.X * other.X) + (this.Y * other.Y) + (this.Z * other.Z);
-    public float ScalarProduct(Vector3D other, float angle) => this.Length * other.Length * MathF.Cos(angle);
+    public static Vector3D operator *(float scalar, Vector3D a) => new(a.X * scalar, a.Y * scalar, a.Z * scalar);
 
     public Vector3D Normalize()
     {
@@ -51,14 +41,19 @@ public readonly struct Vector3D
 
     public float Dot(Vector3D other) => (this.X * other.X) + (this.Y * other.Y) + (this.Z * other.Z);
 
-    public float Dot(Vector3D other, float angle) => Length * other.Length * MathF.Cos(angle);
-
     // Cross product method for calculating normal vectors
     public Vector3D Cross(Vector3D other) => new(
         (Y * other.Z) - (Z * other.Y),
         (Z * other.X) - (X * other.Z),
         (X * other.Y) - (Y * other.X)
     );
+
+    // Added to align with Java implementation - calculate reflection direction
+    public Vector3D ReflectAround(Vector3D normal)
+    {
+        float dot = this.Dot(normal);
+        return this - normal * (2 * dot);
+    }
 
     public override string ToString() => $"({X}, {Y}, {Z})";
 }

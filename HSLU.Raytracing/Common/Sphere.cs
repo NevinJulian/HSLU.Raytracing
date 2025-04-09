@@ -1,62 +1,71 @@
-﻿namespace Common;
-
-public class Sphere : IRaycastable
+﻿namespace Common
 {
-    public Vector3D Center { get; }
-    public MyColor Color { get; }
-    public int Radius { get; }
-
-    public Sphere(Vector3D center, int radius, MyColor color)
+    public class Sphere : IRaycastable
     {
-        Center = center;
-        Radius = radius;
-        Color = color;
-    }
+        public Vector3D Center { get; }
+        public MyColor Color { get; }
+        public Material Material { get; }
+        public float Radius { get; }
 
-    // Method to maintain backward compatibility with existing code
-    public bool IsInSphere(Vector2D point)
-    {
-        var dx = point.X - Center.X;
-        var dy = point.Y - Center.Y;
-        return (dx * dx + dy * dy) <= Math.Pow(Radius, 2);
-    }
+        public Sphere(Vector3D center, float radius, MyColor color, MaterialType materialType = MaterialType.RED_PLASTIC, float reflectivity = 0f)
+        {
+            Center = center;
+            Radius = radius;
+            Color = color;
+            Material = Common.Material.Create(materialType, reflectivity);
+        }
 
-    // New method for IRaycastable interface
-    public (bool hasHit, float intersectionDistance) Intersect(Ray ray)
-    {
-        // Vector from ray origin to sphere center (equivalent to 'v' in professor's code)
-        Vector3D oc = ray.Origin - Center;
+        public Sphere(Vector3D center, float radius, Material material)
+        {
+            Center = center;
+            Radius = radius;
+            Color = material.Diffuse; // Use diffuse color as the main color
+            Material = material;
+        }
 
-        // Quadratic equation coefficients (a, b, c in professor's code)
-        float a = ray.Direction.Dot(ray.Direction);
-        float b = 2.0f * oc.Dot(ray.Direction);
-        float c = oc.Dot(oc) - Radius * Radius;
+        // Method to maintain backward compatibility with existing code
+        public bool IsInSphere(Vector2D point)
+        {
+            var dx = point.X - Center.X;
+            var dy = point.Y - Center.Y;
+            return (dx * dx + dy * dy) <= (Radius * Radius);
+        }
 
-        // Calculate discriminant
-        float discriminant = b * b - 4 * a * c;
+        public (bool hasHit, float intersectionDistance) Intersect(Ray ray)
+        {
+            // Vector from ray origin to sphere center
+            Vector3D oc = ray.Origin - Center;
 
-        // No intersection if discriminant is negative
-        if (discriminant < 0)
-            return (false, float.MaxValue);
+            // Quadratic equation coefficients
+            float a = ray.Direction.Dot(ray.Direction);
+            float b = 2.0f * oc.Dot(ray.Direction);
+            float c = oc.Dot(oc) - Radius * Radius;
 
-        // Calculate the two intersection points
-        float sqrt = (float)Math.Sqrt(discriminant);
-        float t1 = (-b - sqrt) / (2 * a);
-        float t2 = (-b + sqrt) / (2 * a);
+            // Calculate discriminant
+            float discriminant = b * b - 4 * a * c;
 
-        // Return the closest positive intersection
-        if (t1 > 0)
-            return (true, t1);
-        else if (t2 > 0)
-            return (true, t2);
-        else
-            return (false, float.MaxValue);
-    }
+            // No intersection if discriminant is negative
+            if (discriminant < 0)
+                return (false, float.MaxValue);
 
-    // Calculate normal at intersection point
-    public Vector3D GetNormal(Vector3D intersectionPoint)
-    {
-        // Normal is the vector from center to intersection point, normalized
-        return (intersectionPoint - Center).Normalize();
+            // Calculate the two intersection points
+            float sqrt = MathF.Sqrt(discriminant);
+            float t1 = (-b - sqrt) / (2 * a);
+            float t2 = (-b + sqrt) / (2 * a);
+
+            // Return the closest positive intersection
+            if (t1 > 0.0001f)
+                return (true, t1);
+            else if (t2 > 0.0001f)
+                return (true, t2);
+            else
+                return (false, float.MaxValue);
+        }
+
+        public Vector3D GetNormal(Vector3D intersectionPoint)
+        {
+            // Normal is the vector from center to intersection point, normalized
+            return (intersectionPoint - Center).Normalize();
+        }
     }
 }

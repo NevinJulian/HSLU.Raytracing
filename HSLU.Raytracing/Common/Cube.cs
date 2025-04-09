@@ -1,104 +1,112 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Common
+﻿namespace Common
 {
-    public class Cube : IRaycastable
+    public class RotatedCube : IRaycastable
     {
         public Vector3D Center { get; }
         public float Size { get; }
         public MyColor Color { get; }
-        public float RotationAngle { get; }
-        private List<Triangle> Faces { get; }
+        public Material Material { get; }
+        private readonly float RotationX;
+        private readonly float RotationY;
+        private readonly float RotationZ;
+        private readonly List<Triangle> Triangles;
 
-        public Cube(Vector3D center, float size, MyColor color, float rotationAngle = 0f)
+        public RotatedCube(Vector3D center, float size, MyColor color, float rotationX = 0f, float rotationY = 0f, float rotationZ = 0f,
+                       MaterialType materialType = MaterialType.WHITE_PLASTIC, float reflectivity = 0f)
         {
             Center = center;
             Size = size;
             Color = color;
-            RotationAngle = rotationAngle;
-            Faces = CreateFaces();
+            Material = Common.Material.Create(materialType, reflectivity);
+            RotationX = rotationX * MathF.PI / 180f; // Convert to radians
+            RotationY = rotationY * MathF.PI / 180f;
+            RotationZ = rotationZ * MathF.PI / 180f;
+            Triangles = CreateTriangles();
         }
 
-        private List<Triangle> CreateFaces()
+        public RotatedCube(Vector3D center, float size, Material material, float rotationX = 0f, float rotationY = 0f, float rotationZ = 0f)
         {
-            float halfSize = Size / 2f;
+            Center = center;
+            Size = size;
+            Material = material;
+            Color = material.Diffuse; // Use diffuse color as the main color
+            RotationX = rotationX * MathF.PI / 180f; // Convert to radians
+            RotationY = rotationY * MathF.PI / 180f;
+            RotationZ = rotationZ * MathF.PI / 180f;
+            Triangles = CreateTriangles();
+        }
 
-            // Create the 8 corners of the cube
-            Vector3D[] corners = new Vector3D[8];
-            corners[0] = new Vector3D(Center.X - halfSize, Center.Y - halfSize, Center.Z - halfSize); // front bottom left
-            corners[1] = new Vector3D(Center.X + halfSize, Center.Y - halfSize, Center.Z - halfSize); // front bottom right
-            corners[2] = new Vector3D(Center.X + halfSize, Center.Y + halfSize, Center.Z - halfSize); // front top right
-            corners[3] = new Vector3D(Center.X - halfSize, Center.Y + halfSize, Center.Z - halfSize); // front top left
-            corners[4] = new Vector3D(Center.X - halfSize, Center.Y - halfSize, Center.Z + halfSize); // back bottom left
-            corners[5] = new Vector3D(Center.X + halfSize, Center.Y - halfSize, Center.Z + halfSize); // back bottom right
-            corners[6] = new Vector3D(Center.X + halfSize, Center.Y + halfSize, Center.Z + halfSize); // back top right
-            corners[7] = new Vector3D(Center.X - halfSize, Center.Y + halfSize, Center.Z + halfSize); // back top left
+        private List<Triangle> CreateTriangles()
+        {
+            List<Triangle> result = new(12); // A cube has 12 triangles (2 per face)
 
-            // Apply rotation to all corners
-            if (Math.Abs(RotationAngle) > 0.001f)
+            // Calculate half-size for vertex positions
+            float hs = Size / 2.0f;
+
+            // Define the 8 vertices of the cube (before rotation)
+            Vector3D[] vertices = new Vector3D[8];
+            vertices[0] = new Vector3D(-hs, -hs, -hs); // bottom-left-back
+            vertices[1] = new Vector3D(hs, -hs, -hs);  // bottom-right-back
+            vertices[2] = new Vector3D(hs, hs, -hs);   // top-right-back
+            vertices[3] = new Vector3D(-hs, hs, -hs);  // top-left-back
+            vertices[4] = new Vector3D(-hs, -hs, hs);  // bottom-left-front
+            vertices[5] = new Vector3D(hs, -hs, hs);   // bottom-right-front
+            vertices[6] = new Vector3D(hs, hs, hs);    // top-right-front
+            vertices[7] = new Vector3D(-hs, hs, hs);   // top-left-front
+
+            // Apply rotations and translation to all vertices
+            for (int i = 0; i < vertices.Length; i++)
             {
-                for (int i = 0; i < corners.Length; i++)
-                {
-                    corners[i] = RotateAroundYAxis(corners[i]);
-                }
+                vertices[i] = RotateVertex(vertices[i]);
+                vertices[i] = new Vector3D(
+                    vertices[i].X + Center.X,
+                    vertices[i].Y + Center.Y,
+                    vertices[i].Z + Center.Z
+                );
             }
 
-            // Create triangles for all 6 faces (2 triangles per face)
-            // Consistent counter-clockwise winding for all faces
-            var triangles = new List<Triangle>();
+            // Front face
+            result.Add(new Triangle(vertices[4], vertices[5], vertices[6], Material));
+            result.Add(new Triangle(vertices[4], vertices[6], vertices[7], Material));
 
-            // Front face (negative Z)
-            triangles.Add(new Triangle(corners[0], corners[1], corners[2], Color));
-            triangles.Add(new Triangle(corners[0], corners[2], corners[3], Color));
+            // Back face
+            result.Add(new Triangle(vertices[1], vertices[0], vertices[3], Material));
+            result.Add(new Triangle(vertices[1], vertices[3], vertices[2], Material));
 
-            // Back face (positive Z)
-            triangles.Add(new Triangle(corners[4], corners[7], corners[6], Color));
-            triangles.Add(new Triangle(corners[4], corners[6], corners[5], Color));
+            // Left face
+            result.Add(new Triangle(vertices[0], vertices[4], vertices[7], Material));
+            result.Add(new Triangle(vertices[0], vertices[7], vertices[3], Material));
 
-            // Left face (negative X)
-            triangles.Add(new Triangle(corners[0], corners[3], corners[7], Color));
-            triangles.Add(new Triangle(corners[0], corners[7], corners[4], Color));
+            // Right face
+            result.Add(new Triangle(vertices[5], vertices[1], vertices[2], Material));
+            result.Add(new Triangle(vertices[5], vertices[2], vertices[6], Material));
 
-            // Right face (positive X)
-            triangles.Add(new Triangle(corners[1], corners[5], corners[6], Color));
-            triangles.Add(new Triangle(corners[1], corners[6], corners[2], Color));
+            // Top face
+            result.Add(new Triangle(vertices[7], vertices[6], vertices[2], Material));
+            result.Add(new Triangle(vertices[7], vertices[2], vertices[3], Material));
 
-            // Bottom face (negative Y)
-            triangles.Add(new Triangle(corners[0], corners[4], corners[5], Color));
-            triangles.Add(new Triangle(corners[0], corners[5], corners[1], Color));
+            // Bottom face
+            result.Add(new Triangle(vertices[0], vertices[1], vertices[5], Material));
+            result.Add(new Triangle(vertices[0], vertices[5], vertices[4], Material));
 
-            // Top face (positive Y)
-            triangles.Add(new Triangle(corners[3], corners[2], corners[6], Color));
-            triangles.Add(new Triangle(corners[3], corners[6], corners[7], Color));
-
-            return triangles;
+            return result;
         }
 
-        private Vector3D RotateAroundYAxis(Vector3D point)
+        private Vector3D RotateVertex(Vector3D v)
         {
-            // Convert angle to radians
-            float angleRad = RotationAngle * (float)Math.PI / 180f;
+            // Apply X rotation
+            float y1 = v.Y * MathF.Cos(RotationX) - v.Z * MathF.Sin(RotationX);
+            float z1 = v.Y * MathF.Sin(RotationX) + v.Z * MathF.Cos(RotationX);
 
-            // Calculate sin and cos values
-            float cosAngle = (float)Math.Cos(angleRad);
-            float sinAngle = (float)Math.Sin(angleRad);
+            // Apply Y rotation
+            float x2 = v.X * MathF.Cos(RotationY) + z1 * MathF.Sin(RotationY);
+            float z2 = -v.X * MathF.Sin(RotationY) + z1 * MathF.Cos(RotationY);
 
-            // Translate point relative to cube center
-            float relativeX = point.X - Center.X;
-            float relativeY = point.Y - Center.Y;
-            float relativeZ = point.Z - Center.Z;
+            // Apply Z rotation
+            float x3 = x2 * MathF.Cos(RotationZ) - y1 * MathF.Sin(RotationZ);
+            float y3 = x2 * MathF.Sin(RotationZ) + y1 * MathF.Cos(RotationZ);
 
-            // Apply Y-axis rotation
-            float rotatedX = relativeX * cosAngle - relativeZ * sinAngle;
-            float rotatedZ = relativeX * sinAngle + relativeZ * cosAngle;
-
-            // Translate back to world space
-            return new Vector3D(
-                rotatedX + Center.X,
-                relativeY + Center.Y,
-                rotatedZ + Center.Z
-            );
+            return new Vector3D(x3, y3, z2);
         }
 
         public (bool hasHit, float intersectionDistance) Intersect(Ray ray)
@@ -106,12 +114,11 @@ namespace Common
             bool hasHit = false;
             float closestDistance = float.MaxValue;
 
-            // Check all triangle faces and find closest intersection
-            foreach (var triangle in Faces)
+            // Check intersection with all triangles
+            foreach (Triangle triangle in Triangles)
             {
                 var (triangleHit, distance) = triangle.Intersect(ray);
-
-                if (triangleHit && distance > 0.0001f && distance < closestDistance)
+                if (triangleHit && distance > 0.001f && distance < closestDistance)
                 {
                     hasHit = true;
                     closestDistance = distance;
@@ -124,10 +131,10 @@ namespace Common
         public Vector3D GetNormal(Vector3D intersectionPoint)
         {
             // Find the triangle closest to intersection point
-            Triangle closestTriangle = null;
+            Triangle? closestTriangle = null;
             float minDistance = float.MaxValue;
 
-            foreach (var triangle in Faces)
+            foreach (var triangle in Triangles)
             {
                 // Calculate distance to triangle (using centroid for simplicity)
                 Vector3D centroid = (triangle.V1 + triangle.V2 + triangle.V3) * (1.0f / 3.0f);

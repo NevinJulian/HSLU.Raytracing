@@ -1,205 +1,150 @@
-﻿namespace Common
+﻿using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+
+namespace Common
 {
     public class RayTracer
     {
-        // Scene components
-        private List<IRaycastable> SceneObjects { get; }
-        private List<LightSource> LightSources { get; }
-
-        // Rendering parameters
-        public RenderSettings Settings { get; }
-
-        public RayTracer(
-            List<IRaycastable> sceneObjects,
-            List<LightSource> lightSources,
-            RenderSettings? settings = null)
+        public void RenderScene(Scene scene, Camera camera, RenderSettings settings)
         {
-            SceneObjects = sceneObjects;
-            LightSources = lightSources;
-            Settings = settings ?? new RenderSettings();
-        }
+            // Set the max reflection depth in the scene
+            scene.SetMaxReflectionDepth(settings.MaxReflectionDepth);
 
-        /// <summary>
-        /// Traces a ray through the scene and calculates its color
-        /// </summary>
-        public MyColor TraceRay(Ray ray)
-        {
-            var intersection = FindNearestIntersection(ray);
+            // Create the image
+            using var image = new Image<Rgba32>(settings.Width, settings.Height);
 
-            // If no object was hit, return background color
-            if (!intersection.HasHit)
-                return Settings.BackgroundColor;
-
-            // Calculate color at intersection point
-            return CalculateColor(ray, intersection);
-        }
-
-        /// <summary>
-        /// Finds the nearest intersection of a ray with scene objects
-        /// </summary>
-        private RayIntersection FindNearestIntersection(Ray ray)
-        {
-            float nearestDistance = float.MaxValue;
-            IRaycastable nearestObject = null;
-            Vector3D intersectionPoint = new Vector3D(0, 0, 0);
-
-            foreach (var sceneObject in SceneObjects)
+            // Create an array of all scan lines
+            List<int> scanLines = new(settings.Height);
+            for (int y = 0; y < settings.Height; y++)
             {
-                var (hasHit, distance) = sceneObject.Intersect(ray);
+                scanLines.Add(y);
+            }
+            // Shuffle the scan lines for better load balancing
+            Random random = new Random();
+            scanLines = scanLines.OrderBy(x => random.Next()).ToList();
 
-                if (hasHit && distance > 0.001f && distance < nearestDistance)
+            // Divide the scan lines among threads
+            int linesPerThread = (int)Math.Ceiling((double)settings.Height / settings.NumThreads);
+            List<List<int>> threadTasks = new(settings.NumThreads);
+
+            for (int i = 0; i < settings.NumThreads; i++)
+            {
+                int startIdx = i * linesPerThread;
+                int endIdx = Math.Min(startIdx + linesPerThread, settings.Height);
+
+                if (startIdx < settings.Height)
                 {
-                    nearestDistance = distance;
-                    nearestObject = sceneObject;
-                    intersectionPoint = ray.GetPointAt(distance);
+                    threadTasks.Add(scanLines.GetRange(startIdx, endIdx - startIdx));
                 }
             }
 
-            if (nearestObject != null)
+            // Use CountDownLatch pattern with Task to wait for all threads
+            var tasks = new List<Task>();
+            object imageLock = new object(); // For synchronizing access to the shared image
+
+            // Calculate aspect ratio
+            float aspectRatio = (float)settings.Width / settings.Height;
+
+            // Create and start tasks
+            foreach (var taskLines in threadTasks)
             {
-                return new RayIntersection(true, nearestDistance, nearestObject, intersectionPoint);
-            }
-
-            return RayIntersection.Miss();
-        }
-
-        private MyColor CalculateColor(Ray ray, RayIntersection intersection)
-        {
-            var objectColor = intersection.Object.Color;
-            var intersectionPoint = intersection.Point;
-            var normal = intersection.Object.GetNormal(intersectionPoint);
-
-            // Start with ambient light
-            MyColor resultColor = objectColor * Settings.AmbientLight;
-
-            // Process all light sources
-            foreach (var light in LightSources)
-            {
-                // Calculate light direction (from intersection to light)
-                Vector3D lightDirection = (light.Position - intersectionPoint).Normalize();
-
-                // Calculate diffuse lighting using Lambert's cosine law
-                float diffuseFactor = Math.Max(0, normal.Dot(lightDirection));
-
-                // Skip if surface faces away from light
-                if (diffuseFactor <= 0)
-                    continue;
-
-                // Shadow check - only apply lighting if not in shadow
-                bool inShadow = IsPointInShadow(intersectionPoint, normal, light, intersection.Object);
-
-                if (!inShadow)
+                var task = Task.Run(() =>
                 {
-                    // Apply diffuse lighting
-                    resultColor += (objectColor * light.Color * diffuseFactor) * light.Intensity;
-
-                    // Add specular highlight (Phong reflection model)
-                    Vector3D viewDirection = (ray.Origin - intersectionPoint).Normalize();
-                    Vector3D reflectionDirection = CalculateReflectionDirection(normal, lightDirection);
-
-                    float specularFactor = (float)Math.Pow(
-                        Math.Max(0, viewDirection.Dot(reflectionDirection)),
-                        Settings.SpecularPower
-                    );
-
-                    if (specularFactor > 0)
+                    foreach (int y in taskLines)
                     {
-                        MyColor specularColor = light.Color * (specularFactor * Settings.SpecularIntensity);
-                        resultColor += specularColor;
+                        for (int x = 0; x < settings.Width; x++)
+                        {
+                            // Convert pixel coordinates to normalized device coordinates
+                            float nx = ((x - settings.Width / 2.0f) / (settings.Width / 2.0f)) * aspectRatio;
+                            float ny = -((y - settings.Height / 2.0f) / (settings.Height / 2.0f));
+
+                            // Create a ray from the camera
+                            Ray ray = camera.CreateRay(nx, ny);
+
+                            // Trace the ray through the scene
+                            MyColor pixelColor = scene.Trace(ray);
+
+                            // Synchronize access to the shared image
+                            lock (imageLock)
+                            {
+                                image[x, y] = new Rgba32(
+                                    (byte)pixelColor.R,
+                                    (byte)pixelColor.G,
+                                    (byte)pixelColor.B
+                                );
+                            }
+                        }
                     }
-                }
+                });
+
+                tasks.Add(task);
             }
 
-            return resultColor;
+            // Wait for all tasks to complete
+            Task.WhenAll(tasks).Wait();
+
+            // Save the image
+            image.Save(settings.GetOutputFile());
         }
 
-        private bool IsPointInShadow(
-            Vector3D intersectionPoint,
-            Vector3D surfaceNormal,
-            LightSource light,
-            IRaycastable currentObject)
+        public static Scene CreateDemoScene()
         {
-            // Use a more aggressive epsilon to prevent self-shadowing artifacts
-            const float SHADOW_EPSILON = 0.1f;
+            var scene = new Scene();
 
-            // Calculate direction and distance to light
-            Vector3D lightDirection = (light.Position - intersectionPoint).Normalize();
-            float distanceToLight = (light.Position - intersectionPoint).Length;
+            // Add spheres
+            scene.AddObject(new Sphere(
+                new Vector3D(-1.0f, 0.7f, 2f),
+                1.0f,
+                Common.Material.Create(MaterialType.RUBY, 0.4f)
+            ));
 
-            // Compute dot product to ensure we're offsetting in right direction
-            float dotProduct = surfaceNormal.Dot(lightDirection);
+            scene.AddObject(new Sphere(
+                new Vector3D(1.0f, 0.1f, 1f),
+                0.7f,
+                Common.Material.Create(MaterialType.GOLD, 0.6f)
+            ));
 
-            // Offset intersection point along normal to avoid self-intersection
-            // If normal and light direction point in similar direction, offset in normal direction
-            // Otherwise offset in opposite direction to avoid pushing point inside the object
-            Vector3D offsetDirection = dotProduct > 0 ? surfaceNormal : lightDirection;
-            Vector3D shadowRayOrigin = intersectionPoint + (offsetDirection * SHADOW_EPSILON);
+            scene.AddObject(new Sphere(
+                new Vector3D(0f, -1001f, 0f),
+                1000f,
+                Common.Material.Create(MaterialType.JADE, 0.8f)
+            ));
 
-            var shadowRay = new Ray(shadowRayOrigin, lightDirection);
+            scene.AddObject(new Sphere(
+                new Vector3D(0f, 500f, 1020f),
+                1000f,
+                Common.Material.Create(MaterialType.JADE, 0f)
+            ));
 
-            // Check if any object blocks the light
-            foreach (var sceneObject in SceneObjects)
-            {
-                // Skip the object we're calculating lighting for to avoid self-shadowing
-                if (sceneObject == currentObject)
-                    continue;
+            // Add cubes
+            scene.AddObject(new RotatedCube(
+                new Vector3D(1.5f, 0.3f, 0.5f),
+                1.0f,
+                Common.Material.Create(MaterialType.PEARL, 0.3f),
+                30f, 45f, 15f
+            ));
 
-                var (hasHit, distance) = sceneObject.Intersect(shadowRay);
+            scene.AddObject(new RotatedCube(
+                new Vector3D(-1.5f, 0.0f, 0.7f),
+                0.8f,
+                Common.Material.Create(MaterialType.SILVER, 0.7f),
+                15f, -30f, 5f
+            ));
 
-                // If we hit something between the point and the light
-                // Use a small epsilon to avoid precision issues
-                if (hasHit && distance > 0.001f && distance < distanceToLight - 0.001f)
-                {
-                    return true; // Point is in shadow
-                }
-            }
+            // Add lights
+            scene.AddLight(new Light(
+                new Vector3D(-5f, 5f, -5f),
+                new MyColor(255, 255, 255),
+                1.0f
+            ));
 
-            return false; // Point is not in shadow
-        }
+            scene.AddLight(new Light(
+                new Vector3D(3f, 3f, -3f),
+                new MyColor(200, 200, 255),
+                0.8f
+            ));
 
-        /// <summary>
-        /// Calculates the reflection direction for specular highlights
-        /// </summary>
-        private Vector3D CalculateReflectionDirection(Vector3D normal, Vector3D lightDirection)
-        {
-            float dotNL = normal.Dot(lightDirection);
-            return lightDirection - normal * (2 * dotNL);
-        }
-
-        /// <summary>
-        /// Represents the result of a ray intersection
-        /// </summary>
-        public class RayIntersection
-        {
-            public bool HasHit { get; }
-            public float Distance { get; }
-            public IRaycastable? Object { get; }
-            public Vector3D Point { get; }
-
-            public RayIntersection(bool hasHit, float distance, IRaycastable? obj, Vector3D point)
-            {
-                HasHit = hasHit;
-                Distance = distance;
-                Object = obj;
-                Point = point;
-            }
-
-            /// <summary>
-            /// Creates a "miss" intersection
-            /// </summary>
-            public static RayIntersection Miss() =>
-                new(false, float.MaxValue, null, new Vector3D(0, 0, 0));
-        }
-
-        /// <summary>
-        /// Render settings for the ray tracer
-        /// </summary>
-        public class RenderSettings
-        {
-            public MyColor BackgroundColor { get; set; } = MyColor.Black;
-            public MyColor AmbientLight { get; set; } = new MyColor(25, 25, 25);
-            public float SpecularPower { get; set; } = 32f;
-            public float SpecularIntensity { get; set; } = 0.5f;
+            return scene;
         }
     }
 }
