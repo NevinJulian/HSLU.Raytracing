@@ -39,6 +39,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoomSceneDull", "RoomSceneD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Transparent", "Transparent\Transparent.csproj", "{63BE0115-4BE3-4F74-9D0A-47F6962E58F3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalfTransparent", "HalfTransparent\HalfTransparent.csproj", "{71DEB117-81AD-4F47-AF5A-D09090D0DCC3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoapBubbles", "SoapBubbles\SoapBubbles.csproj", "{70495338-3C29-4B5F-840E-D1EF67117D02}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -117,6 +121,14 @@ Global
 		{63BE0115-4BE3-4F74-9D0A-47F6962E58F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{63BE0115-4BE3-4F74-9D0A-47F6962E58F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{63BE0115-4BE3-4F74-9D0A-47F6962E58F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71DEB117-81AD-4F47-AF5A-D09090D0DCC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71DEB117-81AD-4F47-AF5A-D09090D0DCC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71DEB117-81AD-4F47-AF5A-D09090D0DCC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71DEB117-81AD-4F47-AF5A-D09090D0DCC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70495338-3C29-4B5F-840E-D1EF67117D02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70495338-3C29-4B5F-840E-D1EF67117D02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70495338-3C29-4B5F-840E-D1EF67117D02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70495338-3C29-4B5F-840E-D1EF67117D02}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

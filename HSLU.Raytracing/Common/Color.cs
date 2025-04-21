@@ -55,5 +55,14 @@ public class MyColor
             (int)Math.Clamp((a.B * b.B) / 255f, 0, 255)
         );
     }
+
+    public MyColor Blend(MyColor other, float factor)
+    {
+        return new MyColor(
+            (int)(this.R * factor + other.R * (1 - factor)),
+            (int)(this.G * factor + other.G * (1 - factor)),
+            (int)(this.B * factor + other.B * (1 - factor))
+        );
+    }
 }
 
