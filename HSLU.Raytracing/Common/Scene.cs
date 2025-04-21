@@ -81,21 +81,35 @@
                 float lightDistance = lightVector.Length;
                 Vector3D lightDirection = lightVector * (1.0f / lightDistance); // Normalize
 
-                // Calculate dot product with normal (but don't skip negative values yet)
+                // Calculate dot product with normal
                 float cosAngle = normal.Dot(lightDirection);
 
-                // Use the robust shadow test that fixes artifacts
-                bool inShadow = IsPointInShadow(hitPoint, normal, lightDirection, lightDistance, obj.ObjectId);
+                // Check if point is in shadow, but also get the object causing the shadow if any
+                var (inShadow, shadowCaster) = IsPointInShadow(hitPoint, normal, lightDirection, lightDistance, obj.ObjectId);
 
                 if (!inShadow)
                 {
-                    // Calculate diffuse lighting using Lambert's cosine law - same as original
+                    // Calculate diffuse lighting using Lambert's cosine law
                     float diffuseFactor = MathF.Max(0, cosAngle);
 
-                    // IMPORTANT: Use obj.Color instead of material.Diffuse to match original colors
+                    // Use object's color for diffuse calculation
                     red += (int)(obj.Color.R * light.Intensity * diffuseFactor * light.Color.R / 255.0f);
                     green += (int)(obj.Color.G * light.Intensity * diffuseFactor * light.Color.G / 255.0f);
                     blue += (int)(obj.Color.B * light.Intensity * diffuseFactor * light.Color.B / 255.0f);
+                }
+                else if (shadowCaster != null && shadowCaster.Material.Transparency > 0)
+                {
+                    // For transparent objects, add colored shadow effect
+                    // The light passes through the object and picks up its color
+                    float shadowFactor = 0.3f * shadowCaster.Material.Transparency;
+
+                    // Get the shadow caster's color
+                    MyColor shadowColor = shadowCaster.Color;
+
+                    // Apply the colored shadow effect
+                    red += (int)(shadowColor.R * light.Intensity * shadowFactor * light.Color.R / 255.0f);
+                    green += (int)(shadowColor.G * light.Intensity * shadowFactor * light.Color.G / 255.0f);
+                    blue += (int)(shadowColor.B * light.Intensity * shadowFactor * light.Color.B / 255.0f);
                 }
             }
 
@@ -115,6 +129,22 @@
                 blue = (int)(blue * (1 - reflectivity) + reflectionColor.B * reflectivity);
             }
 
+            // Add transparency component if we haven't reached the maximum depth
+            float transparency = material.Transparency;
+            if (transparency > 0 && depth < maxReflectionDepth)
+            {
+                // Create a ray that continues through the object
+                Ray transparencyRay = new Ray(hitPoint, ray.Direction);
+
+                // Get the color from objects behind this one
+                MyColor transparencyColor = Trace(transparencyRay, depth + 1);
+
+                // Blend with the transparency color
+                red = (int)(red * (1 - transparency) + transparencyColor.R * transparency);
+                green = (int)(green * (1 - transparency) + transparencyColor.G * transparency);
+                blue = (int)(blue * (1 - transparency) + transparencyColor.B * transparency);
+            }
+
             // Clamp RGB values to valid range [0-255]
             red = Math.Clamp(red, 0, 255);
             green = Math.Clamp(green, 0, 255);
@@ -130,44 +160,11 @@
             return incident - normal * (2 * dot);
         }
 
-        private bool IsInShadow(Vector3D hitPoint, Vector3D normal, Vector3D lightDirection, Vector3D lightPosition, int originObjectId)
+        private (bool inShadow, IRaycastable? shadowCaster) IsPointInShadow(Vector3D hitPoint, Vector3D normal, Vector3D lightDir, float lightDistance, int sourceObjectId)
         {
-            // Use a more aggressive offset for shadow rays
-            float shadowBias = 0.15f;
+            // Offset calculations to prevent self-shadowing
+            const float BASE_EPSILON = 0.1f;
 
-            // Offset in both normal and light directions for maximum robustness
-            Vector3D offsetPoint = hitPoint + normal * shadowBias + lightDirection * 0.05f;
-
-            Ray shadowRay = new Ray(offsetPoint, lightDirection);
-            float distanceToLight = (lightPosition - offsetPoint).Length;
-
-            foreach (IRaycastable obj in objects)
-            {
-                // Skip the object that the ray hit originally
-                if (obj.ObjectId == originObjectId)
-                    continue;
-
-                // Skip triangles that belong to the same parent object (cube)
-                if (obj is Triangle triangle && triangle.ParentId == originObjectId)
-                    continue;
-
-                var (hasHit, distance) = obj.Intersect(shadowRay);
-                if (hasHit && distance > 0.001f && distance < distanceToLight)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private bool IsPointInShadow(Vector3D hitPoint, Vector3D normal, Vector3D lightDir, float lightDistance, int sourceObjectId)
-        {
-            // Very robust offset calculations
-            const float BASE_EPSILON = 0.1f; // A larger base epsilon
-
-            // Calculate a robust offset that:
-            // 1. Is larger when the light direction is almost perpendicular to the normal
-            // 2. Has a minimum safe value based on scene scale
             float cosAngle = Math.Max(0.01f, normal.Dot(lightDir)); // Avoid division by zero
             float adaptiveOffset = BASE_EPSILON / cosAngle;
             adaptiveOffset = Math.Min(adaptiveOffset, 0.5f); // Cap maximum offset
@@ -190,11 +187,12 @@
                 // Only count intersections between us and the light
                 if (hasHit && distance > 0.001f && distance < lightDistance - adaptiveOffset)
                 {
-                    return true; // In shadow
+                    // Return the object causing the shadow
+                    return (true, obj);
                 }
             }
 
-            return false; // Not in shadow
+            return (false, null); // Not in shadow
         }
 
         public void SetMaxReflectionDepth(int depth)

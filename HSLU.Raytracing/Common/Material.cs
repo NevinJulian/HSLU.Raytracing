@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Common
+﻿namespace Common
 {
     public class Material
     {
@@ -14,8 +8,10 @@ namespace Common
         public MyColor Specular { get; }
         public float Shininess { get; }
         public float Reflectivity { get; }
+        public float Transparency { get; } // Added transparency property
 
-        public Material(MaterialType type, MyColor ambient, MyColor diffuse, MyColor specular, float shininess, float reflectivity)
+        public Material(MaterialType type, MyColor ambient, MyColor diffuse, MyColor specular,
+                        float shininess, float reflectivity, float transparency = 0.0f)
         {
             Type = type;
             Ambient = ambient;
@@ -23,9 +19,10 @@ namespace Common
             Specular = specular;
             Shininess = shininess;
             Reflectivity = Math.Clamp(reflectivity, 0f, 1f); // Clamp reflectivity between 0 and 1
+            Transparency = Math.Clamp(transparency, 0f, 1f); // Clamp transparency between 0 and 1
         }
 
-        public static Material Create(MaterialType type, float reflectivity)
+        public static Material Create(MaterialType type, float reflectivity, float transparency = 0.0f)
         {
             return type switch
             {
@@ -33,38 +30,38 @@ namespace Common
                     new MyColor((int)(0.0215f * 255), (int)(0.1745f * 255), (int)(0.0215f * 255)),
                     new MyColor((int)(0.07568f * 255), (int)(0.61424f * 255), (int)(0.07568f * 255)),
                     new MyColor((int)(0.633f * 255), (int)(0.727811f * 255), (int)(0.633f * 255)),
-                    0.6f, reflectivity),
+                    0.6f, reflectivity, transparency),
 
                 MaterialType.JADE => new Material(type,
                     new MyColor((int)(0.135f * 255), (int)(0.2225f * 255), (int)(0.1575f * 255)),
                     new MyColor((int)(0.54f * 255), (int)(0.89f * 255), (int)(0.63f * 255)),
                     new MyColor((int)(0.316228f * 255), (int)(0.316228f * 255), (int)(0.316228f * 255)),
-                    0.1f, reflectivity),
+                    0.1f, reflectivity, transparency),
 
                 MaterialType.RUBY => new Material(type,
                     new MyColor((int)(0.1745f * 255), (int)(0.01175f * 255), (int)(0.01175f * 255)),
                     new MyColor((int)(0.61424f * 255), (int)(0.04136f * 255), (int)(0.04136f * 255)),
                     new MyColor((int)(0.727811f * 255), (int)(0.626959f * 255), (int)(0.626959f * 255)),
-                    0.6f, reflectivity),
+                    0.6f, reflectivity, transparency),
 
                 MaterialType.GOLD => new Material(type,
                     new MyColor((int)(0.24725f * 255), (int)(0.1995f * 255), (int)(0.0745f * 255)),
                     new MyColor((int)(0.75164f * 255), (int)(0.60648f * 255), (int)(0.22648f * 255)),
                     new MyColor((int)(0.628281f * 255), (int)(0.555802f * 255), (int)(0.366065f * 255)),
-                    0.4f, reflectivity),
+                    0.4f, reflectivity, transparency),
 
                 MaterialType.RED_PLASTIC => new Material(type,
                     new MyColor(0, 0, 0),
                     new MyColor((int)(0.5f * 255), 0, 0),
                     new MyColor((int)(0.7f * 255), (int)(0.6f * 255), (int)(0.6f * 255)),
-                    0.25f, reflectivity),
+                    0.25f, reflectivity, transparency),
 
                 // Default to a gray plastic if type not specifically handled
                 _ => new Material(type,
                     new MyColor((int)(0.05f * 255), (int)(0.05f * 255), (int)(0.05f * 255)),
                     new MyColor((int)(0.5f * 255), (int)(0.5f * 255), (int)(0.5f * 255)),
                     new MyColor((int)(0.7f * 255), (int)(0.7f * 255), (int)(0.7f * 255)),
-                    0.078125f, reflectivity)
+                    0.078125f, reflectivity, transparency)
             };
         }
     }
