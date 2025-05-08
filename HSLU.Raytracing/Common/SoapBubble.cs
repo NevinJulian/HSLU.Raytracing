@@ -1,4 +1,5 @@
 ﻿using System;
+using Common;
 
 namespace Common
 {
@@ -10,46 +11,51 @@ namespace Common
         public float Radius { get; }
         public int ObjectId { get; set; }
 
-        // Soap bubble specific properties
-        private readonly float age;             // Age parameter (affects the interference pattern)
-        private readonly float iridescence;     // Intensity of the iridescence effect (0-1)
-        private readonly float filmVariation;   // Variation in film thickness (0-1)
+        private readonly float age;
+        private readonly float uniquenessFactor;
+        private readonly float filmVariation;
+
+        private readonly int bubbleId;
+        private static int nextBubbleId = 0;
+
+        private readonly float minThickness;
+        private readonly float maxThickness;
+        private readonly float drainageStrength;
 
         public SoapBubble(Vector3D center, float radius, Material material, float age = 0.5f,
-                          float iridescence = 0.8f, float filmVariation = 0.7f)
+                          float uniquenessFactor = 0.8f, float filmVariation = 0.7f)
         {
             Center = center;
             Radius = radius;
             Material = material;
             Color = material.Diffuse;
             this.age = age;
-            this.iridescence = iridescence;
+            this.uniquenessFactor = uniquenessFactor;
             this.filmVariation = filmVariation;
+            this.bubbleId = nextBubbleId++;
+
+            Random random = new Random(bubbleId * 1000 + 42);
+
+            minThickness = 100.0f + (float)random.NextDouble() * 100.0f;
+            maxThickness = 500.0f + (float)random.NextDouble() * 300.0f;
+            drainageStrength = 0.3f + (float)random.NextDouble() * 0.7f;
         }
 
         public (bool hasHit, float intersectionDistance) Intersect(Ray ray)
         {
-            // Vector from ray origin to sphere center
             Vector3D oc = ray.Origin - Center;
-
-            // Quadratic equation coefficients
             float a = ray.Direction.Dot(ray.Direction);
             float b = 2.0f * oc.Dot(ray.Direction);
             float c = oc.Dot(oc) - Radius * Radius;
 
-            // Calculate discriminant
             float discriminant = b * b - 4 * a * c;
-
-            // No intersection if discriminant is negative
             if (discriminant < 0)
                 return (false, float.MaxValue);
 
-            // Calculate the two intersection points
             float sqrt = MathF.Sqrt(discriminant);
             float t1 = (-b - sqrt) / (2 * a);
             float t2 = (-b + sqrt) / (2 * a);
 
-            // Return the closest positive intersection
             if (t1 > 0.0001f)
                 return (true, t1);
             else if (t2 > 0.0001f)
@@ -60,93 +66,117 @@ namespace Common
 
         public Vector3D GetNormal(Vector3D intersectionPoint)
         {
-            // Normal is the vector from center to intersection point, normalized
             return (intersectionPoint - Center).Normalize();
         }
 
-        // Calculate the thin-film interference color at a specific point on the bubble
         public MyColor GetInterferenceColor(Vector3D intersectionPoint, Vector3D viewDirection)
         {
-            // Calculate angle between normal and view direction (determines the interference color)
             Vector3D normal = GetNormal(intersectionPoint);
-            float cosAngle = Math.Abs(normal.Dot(viewDirection));
+            float cosIncidence = MathF.Abs(normal.Dot(viewDirection));
+            float thickness = CalculateFilmThickness((intersectionPoint - Center).Normalize());
 
-            // Calculate the "thickness" based on position and bubble parameters
-            // We use various trig functions to create patterns similar to real soap bubbles
+            return CalculateSpectralBubbleColor(thickness, cosIncidence);
+        }
 
-            // Normalize point on sphere surface for pattern calculation
-            Vector3D normalizedPoint = (intersectionPoint - Center).Normalize();
+        private float CalculateFilmThickness(Vector3D localPoint)
+        {
+            float height = 0.5f + 0.5f * localPoint.Y;
+            float gravityFactor = MathF.Pow(1.0f - height, 1.0f + age * 2.0f);
+            float baseThickness = minThickness + (maxThickness - minThickness) * gravityFactor * drainageStrength;
 
-            // Calculate a varying film thickness based on position on the bubble
-            float x = normalizedPoint.X;
-            float y = normalizedPoint.Y;
-            float z = normalizedPoint.Z;
+            float noise = 0.5f + 0.5f * MathF.Sin(localPoint.X * 17 + localPoint.Y * 13 + localPoint.Z * 19);
+            float variation = noise * filmVariation * 40f;
 
-            // Create swirling patterns based on position
-            float theta = (float)Math.Atan2(y, x);
-            float phi = (float)Math.Acos(z / Radius);
+            float finalThickness = baseThickness + variation;
+            return Math.Clamp(finalThickness, minThickness * 0.5f, maxThickness * 1.5f);
+        }
 
-            // Vary thickness with position using wave patterns
-            float swirl = 0.3f * MathF.Sin(15 * x + age * 20)
-            + 0.3f * MathF.Cos(10 * y + age * 10)
-            + 0.3f * MathF.Sin(20 * z + age * 15)
-            + 0.2f * MathF.Sin(30 * (x + y + z) + age * 5);
+        private MyColor CalculateSpectralBubbleColor(float thickness, float cosIncidence)
+        {
+            float refractiveIndex = 1.33f;
+            float opticalPath = 2.0f * refractiveIndex * thickness * cosIncidence;
 
-            float thickness = 0.5f + 0.5f * swirl;
+            float wavelengthStart = 380f;
+            float wavelengthEnd = 780f;
+            int numSamples = 25;
 
-            // Add some noise and variation
-            thickness += 0.2f * (float)Math.Sin(20 * normalizedPoint.X * normalizedPoint.Y + age * 15);
-            thickness += 0.15f * (float)Math.Cos(15 * normalizedPoint.Y * normalizedPoint.Z + age * 10);
-            thickness += 0.1f * (float)Math.Sin(25 * normalizedPoint.X * normalizedPoint.Z + age * 5);
+            float rSum = 0, gSum = 0, bSum = 0;
 
-            float bubbleNoise = (float)(Math.Sin(age * 123.456 + x * 17.3f + y * 41.2f) * 0.2f);
-            thickness += bubbleNoise;
+            for (int i = 0; i < numSamples; i++)
+            {
+                float wavelength = wavelengthStart + (wavelengthEnd - wavelengthStart) * i / (numSamples - 1);
+                float phase = 2 * MathF.PI * opticalPath / wavelength;
+                float intensity = 0.5f + 0.5f * MathF.Cos(phase);
 
-            // Scale by film variation parameter
-            thickness *= filmVariation;
+                MyColor baseColor = WavelengthToRGB(wavelength);
+                rSum += baseColor.R * intensity;
+                gSum += baseColor.G * intensity;
+                bSum += baseColor.B * intensity;
+            }
 
-            // Normalize to 0-1 range
-            thickness = (thickness + 1) * 0.5f;
-            thickness = (float)(1.0 / (1.0 + Math.Exp(-5 * (thickness - 0.5f))));
+            rSum /= numSamples;
+            gSum /= numSamples;
+            bSum /= numSamples;
 
-            // Viewing angle affects apparent thickness (optical path length)
-            float effectiveThickness = thickness / cosAngle;
+            return new MyColor(
+                (int)Math.Clamp(rSum, 0, 255),
+                (int)Math.Clamp(gSum, 0, 255),
+                (int)Math.Clamp(bSum, 0, 255)
+            );
+        }
 
-            // Calculate RGB colors based on simplified thin-film interference
-            // In real soap bubbles, different wavelengths interfere constructively/destructively
-            // at different film thicknesses, creating the rainbow pattern
+        private MyColor WavelengthToRGB(float wavelength)
+        {
+            float R = 0, G = 0, B = 0;
 
-            // Phase shifts for R, G, B components (these create the color separation)
-            float phaseR = effectiveThickness * 6.0f;
-            float phaseG = effectiveThickness * 6.0f + 2.0f;
-            float phaseB = effectiveThickness * 6.0f + 4.0f;
+            if (wavelength >= 380 && wavelength <= 440)
+            {
+                R = -(wavelength - 440) / (440 - 380);
+                G = 0;
+                B = 1;
+            }
+            else if (wavelength <= 490)
+            {
+                R = 0;
+                G = (wavelength - 440) / (490 - 440);
+                B = 1;
+            }
+            else if (wavelength <= 510)
+            {
+                R = 0;
+                G = 1;
+                B = -(wavelength - 510) / (510 - 490);
+            }
+            else if (wavelength <= 580)
+            {
+                R = (wavelength - 510) / (580 - 510);
+                G = 1;
+                B = 0;
+            }
+            else if (wavelength <= 645)
+            {
+                R = 1;
+                G = -(wavelength - 645) / (645 - 580);
+                B = 0;
+            }
+            else if (wavelength <= 780)
+            {
+                R = 1;
+                G = 0;
+                B = 0;
+            }
 
-            // Calculate interference pattern for each color component
-            float r = (float)Math.Pow(Math.Sin(phaseR) * 0.5f + 0.5f, 2);
-            float g = (float)Math.Pow(Math.Sin(phaseG) * 0.5f + 0.5f, 2);
-            float b = (float)Math.Pow(Math.Sin(phaseB) * 0.5f + 0.5f, 2);
+            float factor = 1.0f;
+            if (wavelength >= 380 && wavelength < 420)
+                factor = 0.3f + 0.7f * (wavelength - 380) / (420 - 380);
+            else if (wavelength > 700 && wavelength <= 780)
+                factor = 0.3f + 0.7f * (780 - wavelength) / (780 - 700);
 
-            r = MathF.Pow(r, 1.2f);
-            g = MathF.Pow(g, 1.2f);
-            b = MathF.Pow(b, 1.2f);
+            R = (float)Math.Clamp(R * factor, 0.0, 1.0);
+            G = (float)Math.Clamp(G * factor, 0.0, 1.0);
+            B = (float)Math.Clamp(B * factor, 0.0, 1.0);
 
-            // Scale by iridescence factor and convert to 0-255 range
-            int red = (int)(r * 255 * iridescence);
-            int green = (int)(g * 255 * iridescence);
-            int blue = (int)(b * 255 * iridescence);
-
-            // Add a base white component to ensure some light always reflects
-            int baseLight = (int)(255 * (1 - iridescence) * 0.8f);
-            red += baseLight;
-            green += baseLight;
-            blue += baseLight;
-
-            // Clamp to valid range
-            red = Math.Clamp(red, 0, 255);
-            green = Math.Clamp(green, 0, 255);
-            blue = Math.Clamp(blue, 0, 255);
-
-            return new MyColor(red, green, blue);
+            return new MyColor((int)(R * 255), (int)(G * 255), (int)(B * 255));
         }
     }
 }

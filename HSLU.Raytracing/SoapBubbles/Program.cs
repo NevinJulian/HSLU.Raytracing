@@ -1,5 +1,6 @@
 ﻿using Common;
 using System;
+using System.Collections.Generic;
 
 namespace SpheresRender
 {
@@ -9,168 +10,61 @@ namespace SpheresRender
         {
             const int width = 1920;
             const int height = 1080;
-            const string filePath = "soap_bubbles_ultrabright.png";
+            const string filePath = "extreme_soap_bubbles.png";
 
             // Create scene
             var scene = new Scene();
 
-            // Move camera back slightly
+            // Position camera for better composition
             var camera = new Camera(new Vector3D(0, 0, -5.5));
 
-            // Create a pure black background material
+            // Create a pure black background
             var blackBackgroundMaterial = new Material(
                 MaterialType.BLACK_PLASTIC,
-                new MyColor(0, 0, 0),        // Black ambient
-                new MyColor(0, 0, 0),        // Black diffuse
+                new MyColor(0, 0, 0),        // Pure black ambient
+                new MyColor(0, 0, 0),        // Pure black diffuse
                 new MyColor(0, 0, 0),        // No specular
                 0.0f,                        // No shininess
                 0.0f,                        // No reflectivity
                 0.0f                         // No transparency
             );
 
-            // ULTRA-bright soap bubble material
-            var soapBubbleMaterialBase = new Material(
+            // Add distant background sphere
+            scene.AddObject(new Sphere(
+                new Vector3D(0, 0, 50),      // Far behind the bubbles
+                100f,                        // Very large radius
+                blackBackgroundMaterial      // Black material
+            ));
+
+            // Create realistic soap bubble material - highly transparent with strong specular
+            var soapBubbleMaterial = new Material(
                 MaterialType.PEARL,
-                new MyColor(50, 50, 50),      // Very high ambient (doubled)
-                new MyColor(255, 255, 255),   // Full white diffuse
-                new MyColor(255, 255, 255),   // Bright specular
-                1.0f,                         // Maximum shininess
-                0.99f,                        // Nearly perfect reflectivity
-                0.5f                          // Medium transparency for better brightness
+                new MyColor(15, 15, 15),     // Low ambient
+                new MyColor(200, 200, 200),  // Moderate diffuse
+                new MyColor(255, 255, 255),  // Bright white specular
+                0.95f,                       // Very high shininess
+                0.4f,                        // Good reflectivity
+                0.85f                        // High transparency
             );
 
-            // Create only 12 LARGE soap bubbles with MAXIMUM vibrancy
-            Random random = new Random(42); // Fixed seed for reproducibility
+            // Create well-distributed bubbles with natural variation
+            Random random = new Random(42);  // Fixed seed for reproducibility
 
-            // Create just 12 large feature bubbles - positioned very specifically
-            int numBubbles = 12;
-            for (int i = 0; i < numBubbles; i++)
-            {
-                // Calculate angle for even distribution around the center
-                float angle = (float)(i * 2 * Math.PI / numBubbles);
+            // Create a better distribution of soap bubbles with more variety
+            CreateExtremelyVariedBubbles(scene, soapBubbleMaterial, random);
 
-                // Calculate position based on angle (spiral pattern)
-                float distanceFromCenter = 2.0f + (i % 4) * 1.5f; // Varying distances
-                float x = (float)(distanceFromCenter * Math.Cos(angle));
-                float y = (float)(distanceFromCenter * Math.Sin(angle));
+            // Setup extremely bright lighting
+            SetupPhysicalLighting(scene);
 
-                // Vary z positions to create depth
-                float z = (float)(random.NextDouble() * 5.0 - 2.5); // -2.5 to 2.5
-
-                // Large bubbles with varying sizes
-                float radius = (float)(random.NextDouble() * 1.5 + 1.0); // 1.0 to 2.5
-
-                // Random "age" parameter - controls pattern
-                float age = (float)(random.NextDouble());
-
-                // Create the soap bubble with MAXIMUM iridescence
-                scene.AddObject(new SoapBubble(
-                    new Vector3D(x, y, z),
-                    radius,
-                    soapBubbleMaterialBase,
-                    age,
-                    1.0f,  // MAXIMUM iridescence intensity
-                    1.0f   // MAXIMUM film thickness variation
-                ));
-            }
-
-            // MASSIVELY boosted lighting setup
-
-            // Primary front light - ULTRA bright
-            scene.AddLight(new Light(
-                new Vector3D(0, 0, -6),
-                new MyColor(255, 255, 255),  // White light
-                10.0f                        // ULTRA intensity - 10x normal
-            ));
-
-            // Secondary front lights - ULTRA bright
-            scene.AddLight(new Light(
-                new Vector3D(-5, 3, -6),
-                new MyColor(255, 240, 220),  // Warm white light
-                8.0f                         // ULTRA intensity
-            ));
-
-            scene.AddLight(new Light(
-                new Vector3D(5, 3, -6),
-                new MyColor(220, 240, 255),  // Cool white light
-                8.0f                         // ULTRA intensity
-            ));
-
-            // Colored lights for iridescence - positioned for maximum effect
-
-            // Magenta light - ULTRA bright
-            scene.AddLight(new Light(
-                new Vector3D(-5, -2, -3),
-                new MyColor(255, 50, 200),   // Vibrant magenta
-                7.0f                         // ULTRA intensity
-            ));
-
-            // Cyan light - ULTRA bright
-            scene.AddLight(new Light(
-                new Vector3D(5, -2, -3),
-                new MyColor(50, 220, 255),   // Vibrant cyan
-                7.0f                         // ULTRA intensity
-            ));
-
-            // Yellow light - ULTRA bright
-            scene.AddLight(new Light(
-                new Vector3D(0, 6, -3),
-                new MyColor(255, 220, 50),   // Vibrant yellow
-                7.0f                         // ULTRA intensity
-            ));
-
-            // Additional colored lights for more vibrant patterns
-
-            // Orange light - ULTRA bright
-            scene.AddLight(new Light(
-                new Vector3D(0, -6, -3),
-                new MyColor(255, 150, 50),   // Vibrant orange
-                6.0f                         // ULTRA intensity
-            ));
-
-            // Purple light - ULTRA bright
-            scene.AddLight(new Light(
-                new Vector3D(-6, 0, -3),
-                new MyColor(180, 50, 255),   // Vibrant purple
-                6.0f                         // ULTRA intensity
-            ));
-
-            // Green light - ULTRA bright
-            scene.AddLight(new Light(
-                new Vector3D(6, 0, -3),
-                new MyColor(50, 255, 100),   // Vibrant green
-                6.0f                         // ULTRA intensity
-            ));
-
-            // Add a few lights behind the bubbles to create rim highlights
-
-            // Rim light 1 - ULTRA bright
-            scene.AddLight(new Light(
-                new Vector3D(0, 0, 6),
-                new MyColor(255, 255, 200),  // Warm white
-                5.0f                         // Very high intensity
-            ));
-
-            // Rim light 2 - ULTRA bright
-            scene.AddLight(new Light(
-                new Vector3D(-3, 3, 6),
-                new MyColor(200, 255, 255),  // Cool white
-                5.0f                         // Very high intensity
-            ));
-
-            // Rim light 3 - ULTRA bright
-            scene.AddLight(new Light(
-                new Vector3D(3, -3, 6),
-                new MyColor(255, 200, 255),  // Pink-white
-                5.0f                         // Very high intensity
-            ));
+            // Set max reflection depth to capture multiple internal reflections in bubbles
+            scene.SetMaxReflectionDepth(10);
 
             // Create render settings
             var settings = new RenderSettings
             {
                 Width = width,
                 Height = height,
-                MaxReflectionDepth = 12,      // Increased for better reflections
+                MaxReflectionDepth = 10,     // Higher reflection depth for multiple reflections
                 OutputFilename = filePath.Replace(".png", ""),
                 OutputFormat = "png",
                 NumThreads = Environment.ProcessorCount
@@ -181,6 +75,188 @@ namespace SpheresRender
             Console.WriteLine("Starting rendering...");
             rayTracer.RenderScene(scene, camera, settings);
             Console.WriteLine($"Image saved to {filePath}");
+        }
+
+        private static void CreateExtremelyVariedBubbles(Scene scene, Material soapBubbleMaterial, Random random)
+        {
+            // Store bubble positions to prevent excessive overlap
+            var bubblePositions = new List<(Vector3D center, float radius)>();
+
+            // Number of bubbles to create
+            int totalBubbles = 40; // More bubbles for a dense scene
+            int attemptsPerBubble = 50; // Maximum attempts to place each bubble
+
+            // Create bubbles with extreme variation
+            for (int i = 0; i < totalBubbles; i++)
+            {
+                bool validPosition = false;
+                Vector3D center = Vector3D.Zero;
+                float radius = 0f;
+
+                // Try multiple positions until we find one with acceptable overlap
+                for (int attempt = 0; attempt < attemptsPerBubble && !validPosition; attempt++)
+                {
+                    // Generate wide random position in view volume
+                    float x = (float)(random.NextDouble() * 14.0 - 7.0);  // -7 to 7
+                    float y = (float)(random.NextDouble() * 10.0 - 5.0);  // -5 to 5
+                    float z = (float)(random.NextDouble() * 8.0 + 1.0);   // 1 to 9 (in front of camera)
+
+                    // Use extreme size variation
+                    float sizeFactor = (float)random.NextDouble();
+
+                    // Distribution favoring small bubbles but with a few large ones
+                    if (sizeFactor < 0.7f)
+                    {
+                        // 70% small bubbles
+                        radius = 0.15f + (float)random.NextDouble() * 0.5f;
+                    }
+                    else if (sizeFactor < 0.9f)
+                    {
+                        // 20% medium bubbles
+                        radius = 0.6f + (float)random.NextDouble() * 0.7f;
+                    }
+                    else
+                    {
+                        // 10% large bubbles
+                        radius = 1.3f + (float)random.NextDouble() * 1.0f;
+                    }
+
+                    center = new Vector3D(x, y, z);
+
+                    // Check overlap with existing bubbles
+                    validPosition = true;
+                    foreach (var (existingCenter, existingRadius) in bubblePositions)
+                    {
+                        // Calculate distance between centers
+                        float distance = (existingCenter - center).Length;
+                        float combinedRadii = radius + existingRadius;
+
+                        // Allow more overlap for smaller bubbles (helps create clusters)
+                        float overlapFactor = 0.7f;
+                        if (radius < 0.4f && existingRadius < 0.4f)
+                        {
+                            overlapFactor = 0.5f; // Small bubbles can overlap more
+                        }
+
+                        // Reject excessive overlap
+                        if (distance < combinedRadii * overlapFactor)
+                        {
+                            validPosition = false;
+                            break;
+                        }
+                    }
+                }
+
+                // If we found a valid position, add the bubble
+                if (validPosition)
+                {
+                    // Add to our tracking list
+                    bubblePositions.Add((center, radius));
+
+                    // Generate extremely varied bubble properties
+                    float age = (float)Math.Pow(random.NextDouble(), 1.5); // More young bubbles than old
+
+                    // Uniqueness factor - controls how distinctive this bubble looks
+                    float uniquenessFactor = 0.4f + (float)random.NextDouble() * 0.6f;
+
+                    // Film variation - controls how much the film thickness varies
+                    float filmVariation = 0.3f + (float)random.NextDouble() * 0.7f;
+
+                    // Create the soap bubble with varied properties
+                    scene.AddObject(new SoapBubble(
+                        center,
+                        radius,
+                        soapBubbleMaterial,
+                        age,
+                        uniquenessFactor,
+                        filmVariation
+                    ));
+                }
+            }
+        }
+
+        private static void SetupPhysicalLighting(Scene scene)
+        {
+            // EXTREMELY bright lighting setup to ensure bubbles are clearly visible
+
+            // Main key light - maximum intensity
+            scene.AddLight(new Light(
+                new Vector3D(4, 5, -6),
+                new MyColor(255, 250, 245),  // Slightly warm white
+                4.0f                         // Maximum intensity
+            ));
+
+            // Fill light from opposite side - very bright
+            scene.AddLight(new Light(
+                new Vector3D(-5, -2, -4),
+                new MyColor(220, 230, 255),  // Slightly cool
+                2.5f                         // Very high intensity
+            ));
+
+            // Rim light from behind - very bright
+            scene.AddLight(new Light(
+                new Vector3D(0, 1, 8),
+                new MyColor(255, 255, 255),  // Pure white
+                3.0f                         // Very high intensity
+            ));
+
+            // Super bright colored accent lights for vibrant reflection colors
+
+            // Magenta accent
+            scene.AddLight(new Light(
+                new Vector3D(-4, 3, -3),
+                new MyColor(255, 100, 200),  // Magenta
+                2.0f                         // Very high intensity
+            ));
+
+            // Cyan accent
+            scene.AddLight(new Light(
+                new Vector3D(4, -3, -3),
+                new MyColor(100, 220, 255),  // Cyan
+                2.0f                         // Very high intensity
+            ));
+
+            // Golden accent
+            scene.AddLight(new Light(
+                new Vector3D(0, -4, -2),
+                new MyColor(255, 200, 100),  // Golden yellow
+                2.0f                         // Very high intensity
+            ));
+
+            // Additional colored lights for more variety
+
+            // Green accent
+            scene.AddLight(new Light(
+                new Vector3D(5, 2, -3),
+                new MyColor(120, 255, 120),  // Green
+                1.5f                         // High intensity
+            ));
+
+            // Blue accent
+            scene.AddLight(new Light(
+                new Vector3D(-5, 2, -1),
+                new MyColor(100, 100, 255),  // Blue
+                1.5f                         // High intensity
+            ));
+
+            // Add multiple lights from camera direction to ensure front illumination
+            scene.AddLight(new Light(
+                new Vector3D(0, 0, -5),      // Directly from camera
+                new MyColor(255, 255, 255),  // White light
+                1.5f                         // High intensity
+            ));
+
+            scene.AddLight(new Light(
+                new Vector3D(2, 2, -5),      // Slightly up-right from camera
+                new MyColor(255, 255, 255),  // White light
+                1.0f                         // Medium intensity
+            ));
+
+            scene.AddLight(new Light(
+                new Vector3D(-2, -2, -5),    // Slightly down-left from camera
+                new MyColor(255, 255, 255),  // White light
+                1.0f                         // Medium intensity
+            ));
         }
     }
 }

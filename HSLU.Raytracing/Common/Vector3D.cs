@@ -5,6 +5,8 @@ public readonly struct Vector3D
     public readonly float Y { get; }
     public readonly float Z { get; }
 
+    public static Vector3D Zero => new Vector3D(0, 0, 0);
+
     // Constructor for float values
     public Vector3D(float x, float y, float z)
     {

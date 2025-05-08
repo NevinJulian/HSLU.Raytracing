@@ -61,6 +61,8 @@
             return closestHit;
         }
 
+        // Simplified version to avoid shadow problems with soap bubbles
+        // This lets the bubbles show their colors more clearly
         private MyColor CalculateColor(HitInfo hitInfo, Ray ray, int depth)
         {
             IRaycastable obj = hitInfo.Object;
@@ -69,25 +71,28 @@
             Vector3D normal = hitInfo.Normal;
 
             // Special handling for Soap Bubbles
+            bool isSoapBubble = obj is SoapBubble;
             MyColor objectColor;
-            if (obj is SoapBubble soapBubble)
+
+            if (isSoapBubble)
             {
-                // Use the special interference color calculation for soap bubbles
+                // For soap bubbles, use special color calculation
+                SoapBubble soapBubble = (SoapBubble)obj;
                 objectColor = soapBubble.GetInterferenceColor(hitPoint, -ray.Direction);
             }
             else
             {
-                // Normal object color
+                // Regular object color
                 objectColor = obj.Color;
             }
 
-            // Start with ambient light component
-            MyColor ambient = material.Ambient;
-            MyColor interferenceColor = obj is SoapBubble soap ? soap.GetInterferenceColor(hitPoint, -ray.Direction) : obj.Color;
+            // Initialize color components with ambient light
+            int red = (int)(material.Ambient.R);
+            int green = (int)(material.Ambient.G);
+            int blue = (int)(material.Ambient.B);
 
-            int red = (int)(ambient.R * 0.5f + interferenceColor.R * 0.5f);
-            int green = (int)(ambient.G * 0.5f + interferenceColor.G * 0.5f);
-            int blue = (int)(ambient.B * 0.5f + interferenceColor.B * 0.5f);
+            // Add special handling for soap bubbles - completely skip shadows for them
+            bool skipShadowCheck = isSoapBubble;
 
             foreach (Light light in lights)
             {
@@ -96,53 +101,68 @@
                 float lightDistance = lightVector.Length;
                 Vector3D lightDirection = lightVector * (1.0f / lightDistance); // Normalize
 
-                // Calculate dot product with normal (but don't skip negative values yet)
+                // Calculate dot product with normal for diffuse lighting
                 float cosAngle = normal.Dot(lightDirection);
 
-                // Use the robust shadow test that fixes artifacts
-                bool inShadow = IsPointInShadow(hitPoint, normal, lightDirection, lightDistance, obj.ObjectId);
+                // For soap bubbles, we want to skip shadow checks to make them more visible
+                bool inShadow = false;
+                if (!skipShadowCheck)
+                {
+                    inShadow = IsPointInShadow(hitPoint, normal, lightDirection, lightDistance, obj.ObjectId);
+                }
 
                 if (!inShadow)
                 {
                     // Calculate diffuse lighting using Lambert's cosine law
                     float diffuseFactor = MathF.Max(0, cosAngle);
 
-                    // Special handling for soap bubbles - they need their own color calculation
-                    if (obj is SoapBubble)
+                    if (isSoapBubble)
                     {
-                        // For soap bubbles, we already calculated the interference color
-                        // Just apply the light intensity
+                        // For soap bubbles, we want to enhance the diffuse lighting
+                        diffuseFactor = 0.5f + 0.5f * diffuseFactor; // Soften the falloff
+
+                        // Apply diffuse lighting
                         red += (int)(objectColor.R * light.Intensity * diffuseFactor * light.Color.R / 255.0f);
                         green += (int)(objectColor.G * light.Intensity * diffuseFactor * light.Color.G / 255.0f);
                         blue += (int)(objectColor.B * light.Intensity * diffuseFactor * light.Color.B / 255.0f);
                     }
                     else
                     {
-                        // For normal objects, use standard color calculation
-                        red += (int)(objectColor.R * light.Intensity * diffuseFactor * light.Color.R / 255.0f);
-                        green += (int)(objectColor.G * light.Intensity * diffuseFactor * light.Color.G / 255.0f);
-                        blue += (int)(objectColor.B * light.Intensity * diffuseFactor * light.Color.B / 255.0f);
+                        // Regular diffuse calculation for other objects
+                        red += (int)(obj.Color.R * light.Intensity * diffuseFactor * light.Color.R / 255.0f);
+                        green += (int)(obj.Color.G * light.Intensity * diffuseFactor * light.Color.G / 255.0f);
+                        blue += (int)(obj.Color.B * light.Intensity * diffuseFactor * light.Color.B / 255.0f);
                     }
 
-                    // Add specular highlight for shiny materials
+                    // Add specular highlights
                     if (material.Shininess > 0)
                     {
                         Vector3D reflection = CalculateReflection(-lightDirection, normal);
                         float specularFactor = MathF.Max(0, reflection.Dot(-ray.Direction));
-                        specularFactor = MathF.Pow(specularFactor, material.Shininess * 128);
-                        
-                        red += (int)(material.Specular.R * light.Intensity * specularFactor * light.Color.R / 255.0f);
-                        green += (int)(material.Specular.G * light.Intensity * specularFactor * light.Color.G / 255.0f);
-                        blue += (int)(material.Specular.B * light.Intensity * specularFactor * light.Color.B / 255.0f);
-                    }
 
-                    if (obj is SoapBubble)
-                    {
-                        // Already using interference color - just boost it
-                        float boostFactor = 1.25f;
-                        red += (int)(objectColor.R * light.Intensity * diffuseFactor * light.Color.R / 255.0f * boostFactor);
-                        green += (int)(objectColor.G * light.Intensity * diffuseFactor * light.Color.G / 255.0f * boostFactor);
-                        blue += (int)(objectColor.B * light.Intensity * diffuseFactor * light.Color.B / 255.0f * boostFactor);
+                        if (isSoapBubble)
+                        {
+                            // Sharper specular for soap bubbles
+                            specularFactor = MathF.Pow(specularFactor, 64);
+
+                            // Enhance the specular highlights for better visibility
+                            float specularMultiplier = 2.0f;
+
+                            // Add specular highlight
+                            red += (int)(material.Specular.R * light.Intensity * specularFactor * light.Color.R / 255.0f * specularMultiplier);
+                            green += (int)(material.Specular.G * light.Intensity * specularFactor * light.Color.G / 255.0f * specularMultiplier);
+                            blue += (int)(material.Specular.B * light.Intensity * specularFactor * light.Color.B / 255.0f * specularMultiplier);
+                        }
+                        else
+                        {
+                            // Regular specular for other objects
+                            specularFactor = MathF.Pow(specularFactor, material.Shininess * 128);
+
+                            // Add specular highlight
+                            red += (int)(material.Specular.R * light.Intensity * specularFactor * light.Color.R / 255.0f);
+                            green += (int)(material.Specular.G * light.Intensity * specularFactor * light.Color.G / 255.0f);
+                            blue += (int)(material.Specular.B * light.Intensity * specularFactor * light.Color.B / 255.0f);
+                        }
                     }
                 }
             }
@@ -157,29 +177,51 @@
                 // Get the color from the reflection ray
                 MyColor reflectionColor = Trace(reflectionRay, depth + 1);
 
-                // Add reflection component weighted by reflectivity
-                red = (int)(red * (1 - reflectivity) + reflectionColor.R * reflectivity);
-                green = (int)(green * (1 - reflectivity) + reflectionColor.G * reflectivity);
-                blue = (int)(blue * (1 - reflectivity) + reflectionColor.B * reflectivity);
+                if (isSoapBubble)
+                {
+                    // Calculate Fresnel factor (more reflective at glancing angles)
+                    float viewDot = MathF.Abs(normal.Dot(-ray.Direction));
+                    float fresnelFactor = MathF.Pow(1.0f - viewDot, 5.0f);
+
+                    // Boost reflectivity at edges using Fresnel
+                    float effectiveReflectivity = reflectivity + (1.0f - reflectivity) * fresnelFactor;
+
+                    // Apply reflection
+                    red = (int)(red * (1.0f - effectiveReflectivity) + reflectionColor.R * effectiveReflectivity);
+                    green = (int)(green * (1.0f - effectiveReflectivity) + reflectionColor.G * effectiveReflectivity);
+                    blue = (int)(blue * (1.0f - effectiveReflectivity) + reflectionColor.B * effectiveReflectivity);
+                }
+                else
+                {
+                    // Standard reflection for other objects
+                    red = (int)(red * (1.0f - reflectivity) + reflectionColor.R * reflectivity);
+                    green = (int)(green * (1.0f - reflectivity) + reflectionColor.G * reflectivity);
+                    blue = (int)(blue * (1.0f - reflectivity) + reflectionColor.B * reflectivity);
+                }
             }
 
             // Add transparency component if we haven't reached the maximum depth
             float transparency = material.Transparency;
             if (transparency > 0 && depth < maxReflectionDepth)
             {
-                // For soap bubbles, use a more accurate refraction model
+                // Create ray for transparency
                 Ray transparencyRay;
-                if (obj is SoapBubble)
+
+                if (isSoapBubble)
                 {
-                    // Slightly perturb the ray direction for soap bubbles to simulate refraction effects
-                    float refractionStrength = 0.05f; // Subtle perturbation
+                    // Use slightly simplified refraction for better performance
+                    // Just use the incident direction with a small random perturbation
+                    Vector3D refractedDir = ray.Direction;
+
+                    // Add a very small random perturbation
+                    Random random = new Random(obj.ObjectId * 1000 + (int)(hitPoint.X * 100 + hitPoint.Y * 10 + hitPoint.Z));
                     Vector3D perturbation = new Vector3D(
-                        (float)(Math.Sin(hitPoint.X * 10) * refractionStrength),
-                        (float)(Math.Sin(hitPoint.Y * 10) * refractionStrength),
-                        (float)(Math.Sin(hitPoint.Z * 10) * refractionStrength)
+                        (float)(random.NextDouble() * 0.005 - 0.0025),
+                        (float)(random.NextDouble() * 0.005 - 0.0025),
+                        (float)(random.NextDouble() * 0.005 - 0.0025)
                     );
-                    
-                    Vector3D refractedDir = (ray.Direction + perturbation).Normalize();
+
+                    refractedDir = (refractedDir + perturbation).Normalize();
                     transparencyRay = new Ray(hitPoint, refractedDir);
                 }
                 else
@@ -191,15 +233,36 @@
                 // Get the color from transparency ray
                 MyColor transparencyColor = Trace(transparencyRay, depth + 1);
 
-                if (obj is SoapBubble)
+                if (isSoapBubble)
                 {
-                    transparencyColor = interferenceColor.Blend(transparencyColor, 0.7f);
-                }
+                    // Calculate view-dependent transparency
+                    float viewDot = MathF.Abs(normal.Dot(-ray.Direction));
+                    float fresnelFactor = MathF.Pow(1.0f - viewDot, 5.0f);
 
-                // Blend the current color with the transparency color
-                red = (int)(red * (1 - transparency) + transparencyColor.R * transparency);
-                green = (int)(green * (1 - transparency) + transparencyColor.G * transparency);
-                blue = (int)(blue * (1 - transparency) + transparencyColor.B * transparency);
+                    // Less transparent at glancing angles (Fresnel effect)
+                    float effectiveTransparency = transparency * (1.0f - fresnelFactor * 0.8f);
+
+                    // Apply transparency
+                    red = (int)(red * (1.0f - effectiveTransparency) + transparencyColor.R * effectiveTransparency);
+                    green = (int)(green * (1.0f - effectiveTransparency) + transparencyColor.G * effectiveTransparency);
+                    blue = (int)(blue * (1.0f - effectiveTransparency) + transparencyColor.B * effectiveTransparency);
+                }
+                else
+                {
+                    // Standard transparency for other objects
+                    red = (int)(red * (1.0f - transparency) + transparencyColor.R * transparency);
+                    green = (int)(green * (1.0f - transparency) + transparencyColor.G * transparency);
+                    blue = (int)(blue * (1.0f - transparency) + transparencyColor.B * transparency);
+                }
+            }
+
+            // For soap bubbles, apply a final brightness boost
+            if (isSoapBubble)
+            {
+                float boostFactor = 1.2f;
+                red = (int)(red * boostFactor);
+                green = (int)(green * boostFactor);
+                blue = (int)(blue * boostFactor);
             }
 
             // Clamp RGB values to valid range [0-255]
@@ -208,6 +271,51 @@
             blue = Math.Clamp(blue, 0, 255);
 
             return new MyColor(red, green, blue);
+        }
+
+        // Modified shadow test for soap bubbles
+        private bool IsPartiallyInShadow(Vector3D hitPoint, Vector3D normal, Vector3D lightDir, float lightDistance, int sourceObjectId)
+        {
+            // Use a more relaxed epsilon for transparent soap bubbles
+            const float BASE_EPSILON = 0.15f;
+
+            // Calculate an adaptive offset similar to regular shadow test
+            float cosAngle = Math.Max(0.01f, normal.Dot(lightDir));
+            float adaptiveOffset = BASE_EPSILON / cosAngle;
+            adaptiveOffset = Math.Min(adaptiveOffset, 0.6f);
+
+            // Offset the ray origin along both normal and light direction
+            Vector3D offsetPoint = hitPoint + normal * adaptiveOffset + lightDir * 0.01f;
+
+            // Create a ray from the offset point toward the light
+            Ray shadowRay = new Ray(offsetPoint, lightDir);
+
+            // Test against all objects
+            foreach (IRaycastable obj in objects)
+            {
+                // Skip self-intersection
+                if (obj.ObjectId == sourceObjectId)
+                    continue;
+
+                var (hasHit, distance) = obj.Intersect(shadowRay);
+
+                // Only count intersections between us and the light
+                if (hasHit && distance > 0.001f && distance < lightDistance - adaptiveOffset)
+                {
+                    // If the shadowing object is a soap bubble, it casts only partial shadow
+                    if (obj is SoapBubble)
+                    {
+                        // Soap bubbles are mostly transparent, so they don't cast strong shadows
+                        // Return false to allow light through
+                        return false;
+                    }
+
+                    // Otherwise it's a solid object casting a full shadow
+                    return true;
+                }
+            }
+
+            return false; // Not in shadow
         }
 
         // Helper method to calculate reflection vector
