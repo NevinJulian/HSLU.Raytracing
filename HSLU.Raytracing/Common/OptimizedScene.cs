@@ -3,17 +3,17 @@ using System.Collections.Generic;
 
 namespace Common
 {
-    // This is a modified version of the Scene class with enhanced refraction support
-    // You can integrate these changes into your existing Scene.cs file
-    public class Scene
+    public class OptimizedScene
     {
         private readonly List<IRaycastable> objects;
         private readonly List<Light> lights;
         private static readonly MyColor BACKGROUND_COLOR = MyColor.Black;
         private int maxReflectionDepth = 10; // Default value
         private int nextObjectId = 0;
+        private BVHAccelerator bvhAccelerator;
+        private bool useAcceleration = true;
 
-        public Scene()
+        public OptimizedScene()
         {
             objects = new List<IRaycastable>();
             lights = new List<Light>();
@@ -23,11 +23,31 @@ namespace Common
         {
             obj.ObjectId = nextObjectId++;
             objects.Add(obj);
+
+            // Mark that we need to rebuild the BVH
+            bvhAccelerator = null;
         }
 
         public void AddLight(Light light)
         {
             lights.Add(light);
+        }
+
+        // Build or rebuild the BVH acceleration structure
+        public void BuildAccelerationStructure()
+        {
+            bvhAccelerator = new BVHAccelerator(objects);
+            Console.WriteLine($"Built BVH with {objects.Count} objects");
+        }
+
+        // Enable or disable acceleration
+        public void SetAcceleration(bool enabled)
+        {
+            useAcceleration = enabled;
+            if (enabled && bvhAccelerator == null && objects.Count > 0)
+            {
+                BuildAccelerationStructure();
+            }
         }
 
         public MyColor Trace(Ray ray)
@@ -37,7 +57,7 @@ namespace Common
 
         private MyColor Trace(Ray ray, int depth)
         {
-            HitInfo? hitInfo = FindClosestIntersection(ray);
+            HitInfo hitInfo = FindClosestIntersection(ray);
 
             if (hitInfo != null)
             {
@@ -46,9 +66,16 @@ namespace Common
             return BACKGROUND_COLOR;
         }
 
-        private HitInfo? FindClosestIntersection(Ray ray)
+        private HitInfo FindClosestIntersection(Ray ray)
         {
-            HitInfo? closestHit = null;
+            // Use BVH if enabled and built
+            if (useAcceleration && bvhAccelerator != null)
+            {
+                return bvhAccelerator.FindClosestIntersection(ray);
+            }
+
+            // Fall back to brute-force method
+            HitInfo closestHit = null;
             float closestDistance = float.MaxValue;
 
             foreach (IRaycastable obj in objects)
@@ -99,14 +126,14 @@ namespace Common
                 }
                 else
                 {
-                    // For glass sphere, we want partial shadows
-                    inShadow = IsPartiallyInShadow(hitPoint, normal, lightDirection, lightDistance, obj.ObjectId);
+                    // For glass sphere, shadows are partial
+                    inShadow = false; // Simplified - glass lets most light through
                 }
 
                 if (!inShadow || isGlassSphere) // Glass lets some light through
                 {
                     // Calculate diffuse lighting using Lambert's cosine law
-                    float diffuseFactor = MathF.Max(0, cosAngle);
+                    float diffuseFactor = Math.Max(0, cosAngle);
 
                     // Scale down diffuse for glass for a more realistic look
                     if (isGlassSphere)
@@ -123,7 +150,7 @@ namespace Common
                     if (material.Shininess > 0)
                     {
                         Vector3D reflection = CalculateReflection(-lightDirection, normal);
-                        float specularFactor = MathF.Max(0, reflection.Dot(-ray.Direction));
+                        float specularFactor = Math.Max(0, reflection.Dot(-ray.Direction));
 
                         // Sharper specular for glass
                         float shininessPower = material.Shininess * 128;
@@ -132,7 +159,7 @@ namespace Common
                             shininessPower = 256; // Even sharper highlights for glass
                         }
 
-                        specularFactor = MathF.Pow(specularFactor, shininessPower);
+                        specularFactor = (float)Math.Pow(specularFactor, shininessPower);
 
                         // Add specular highlight
                         red += (int)(material.Specular.R * light.Intensity * specularFactor * light.Color.R / 255.0f);
@@ -144,13 +171,15 @@ namespace Common
 
             // Add reflection component if we haven't reached the maximum depth
             float reflectivity = material.Reflectivity;
+            MyColor reflectionColor = MyColor.Black; // Initialize
+
             if (reflectivity > 0 && depth < maxReflectionDepth)
             {
                 Vector3D reflectionDir = CalculateReflection(ray.Direction, normal);
                 Ray reflectionRay = new Ray(hitPoint + normal * 0.01f, reflectionDir);
 
                 // Get the color from the reflection ray
-                MyColor reflectionColor = Trace(reflectionRay, depth + 1);
+                reflectionColor = Trace(reflectionRay, depth + 1);
 
                 // Standard reflection for non-glass objects
                 if (!isGlassSphere)
@@ -158,13 +187,6 @@ namespace Common
                     red = (int)(red * (1.0f - reflectivity) + reflectionColor.R * reflectivity);
                     green = (int)(green * (1.0f - reflectivity) + reflectionColor.G * reflectivity);
                     blue = (int)(blue * (1.0f - reflectivity) + reflectionColor.B * reflectivity);
-                }
-                else
-                {
-                    // For glass objects, we'll handle reflection with Fresnel later
-                    // Just store the reflection color for now
-                    var savedReflectionColor = reflectionColor;
-                    reflectionColor = savedReflectionColor;
                 }
             }
 
@@ -190,27 +212,34 @@ namespace Common
                     float r0 = (1.0f - glassSphere.RefractionIndex) / (1.0f + glassSphere.RefractionIndex);
                     r0 = r0 * r0;
 
-                    float viewDot = MathF.Abs(normal.Dot(-ray.Direction));
-                    float fresnelFactor = r0 + (1.0f - r0) * MathF.Pow(1.0f - viewDot, 5.0f);
+                    float viewDot = Math.Abs(normal.Dot(-ray.Direction));
+                    float fresnelFactor = r0 + (1.0f - r0) * (float)Math.Pow(1.0f - viewDot, 5.0f);
 
-                    // Re-trace reflection ray for Fresnel
-                    Vector3D reflectionDir = CalculateReflection(ray.Direction, normal);
-                    Ray reflectionRay = new Ray(hitPoint + normal * 0.01f, reflectionDir);
-                    MyColor reflectionColor = Trace(reflectionRay, depth + 1);
+                    // If we haven't calculated reflection yet, do it now
+                    if (reflectivity <= 0)
+                    {
+                        Vector3D reflectionDir = CalculateReflection(ray.Direction, normal);
+                        Ray reflectionRay = new Ray(hitPoint + normal * 0.01f, reflectionDir);
+                        reflectionColor = Trace(reflectionRay, depth + 1);
+                    }
 
                     // Mix colors based on Fresnel (more reflective at glancing angles)
-                    float effectiveReflectivity = reflectivity + (1.0f - reflectivity) * fresnelFactor;
+                    float effectiveReflectivity = Math.Max(reflectivity, fresnelFactor);
                     float effectiveTransparency = transparency * (1.0f - fresnelFactor * 0.8f);
 
-                    red = (int)(red * (1.0f - effectiveTransparency - effectiveReflectivity) +
+                    // Blend colors
+                    float totalEffect = effectiveReflectivity + effectiveTransparency;
+                    float remainingColor = Math.Max(0, 1.0f - totalEffect);
+
+                    red = (int)(red * remainingColor +
                                reflectionColor.R * effectiveReflectivity +
                                refractedColor.R * effectiveTransparency);
 
-                    green = (int)(green * (1.0f - effectiveTransparency - effectiveReflectivity) +
+                    green = (int)(green * remainingColor +
                                  reflectionColor.G * effectiveReflectivity +
                                  refractedColor.G * effectiveTransparency);
 
-                    blue = (int)(blue * (1.0f - effectiveTransparency - effectiveReflectivity) +
+                    blue = (int)(blue * remainingColor +
                                 reflectionColor.B * effectiveReflectivity +
                                 refractedColor.B * effectiveTransparency);
                 }
@@ -227,24 +256,24 @@ namespace Common
             }
 
             // Clamp RGB values to valid range [0-255]
-            red = Math.Clamp(red, 0, 255);
-            green = Math.Clamp(green, 0, 255);
-            blue = Math.Clamp(blue, 0, 255);
+            red = ClampValue(red, 0, 255);
+            green = ClampValue(green, 0, 255);
+            blue = ClampValue(blue, 0, 255);
 
             return new MyColor(red, green, blue);
+        }
+
+        // Helper method to calculate reflection vector
+        private Vector3D CalculateReflection(Vector3D incident, Vector3D normal)
+        {
+            float dot = incident.Dot(normal);
+            return incident - normal * (2 * dot);
         }
 
         // Calculate refraction direction using Snell's law
         private Vector3D CalculateRefraction(Vector3D incident, Vector3D normal, float indexOfRefraction)
         {
             // Custom clamp function since MathF.Clamp might not be available in all .NET versions
-            float ClampValue(float value, float min, float max)
-            {
-                if (value < min) return min;
-                if (value > max) return max;
-                return value;
-            }
-
             float cosi = ClampValue(incident.Dot(normal), -1.0f, 1.0f);
             float etai = 1.0f;
             float etat = indexOfRefraction;
@@ -270,78 +299,55 @@ namespace Common
             // Total internal reflection
             if (k < 0)
             {
-                // Calculate reflection
-                return incident - normal * (2.0f * incident.Dot(normal));
+                return CalculateReflection(incident, normal);
             }
 
-            // Refraction using Snell's law
-            return incident * eta + n * (eta * cosi - MathF.Sqrt(k));
+            return (incident * eta) + (n * (eta * cosi - (float)Math.Sqrt(k)));
         }
 
-        // Shadow test with partial shadows for transparent objects
-        private bool IsPartiallyInShadow(Vector3D hitPoint, Vector3D normal, Vector3D lightDir, float lightDistance, int sourceObjectId)
-        {
-            const float BASE_EPSILON = 0.15f;
-            float cosAngle = Math.Max(0.01f, normal.Dot(lightDir));
-            float adaptiveOffset = BASE_EPSILON / cosAngle;
-            adaptiveOffset = Math.Min(adaptiveOffset, 0.6f);
-
-            Vector3D offsetPoint = hitPoint + normal * adaptiveOffset + lightDir * 0.01f;
-            Ray shadowRay = new Ray(offsetPoint, lightDir);
-
-            foreach (IRaycastable obj in objects)
-            {
-                if (obj.ObjectId == sourceObjectId)
-                    continue;
-
-                var (hasHit, distance) = obj.Intersect(shadowRay);
-                if (hasHit && distance > 0.001f && distance < lightDistance - adaptiveOffset)
-                {
-                    // If the shadowing object is glass or transparent, it casts only partial shadow
-                    if (obj is GlassSphere || obj.Material.Transparency > 0.5f)
-                    {
-                        // Transparent objects allow most light through
-                        return false;
-                    }
-
-                    // Otherwise it's a solid object casting a full shadow
-                    return true;
-                }
-            }
-
-            return false; // Not in shadow
-        }
-
-        // Regular shadow test for opaque objects
         private bool IsPointInShadow(Vector3D hitPoint, Vector3D normal, Vector3D lightDir, float lightDistance, int sourceObjectId)
         {
-            const float BASE_EPSILON = 0.1f;
-            float cosAngle = Math.Max(0.01f, normal.Dot(lightDir));
-            float adaptiveOffset = BASE_EPSILON / cosAngle;
-            adaptiveOffset = Math.Min(adaptiveOffset, 0.5f);
+            // Very robust offset calculations
+            const float BASE_EPSILON = 0.1f; // A larger base epsilon
 
+            // Calculate a robust offset that:
+            // 1. Is larger when the light direction is almost perpendicular to the normal
+            // 2. Has a minimum safe value based on scene scale
+            float cosAngle = Math.Max(0.01f, normal.Dot(lightDir)); // Avoid division by zero
+            float adaptiveOffset = BASE_EPSILON / cosAngle;
+            adaptiveOffset = Math.Min(adaptiveOffset, 0.5f); // Cap maximum offset
+
+            // Offset the ray origin along both normal and light direction
             Vector3D offsetPoint = hitPoint + normal * adaptiveOffset + lightDir * 0.01f;
+
+            // Create a ray from the offset point toward the light
             Ray shadowRay = new Ray(offsetPoint, lightDir);
 
+            // For shadow rays, we only need to know if there's any hit, not the closest one
+            if (useAcceleration && bvhAccelerator != null)
+            {
+                // Use a faster "any hit" test for shadows if possible
+                HitInfo hit = bvhAccelerator.FindClosestIntersection(shadowRay);
+                return hit != null && hit.Distance < lightDistance - adaptiveOffset && hit.ObjectId != sourceObjectId;
+            }
+
+            // Fall back to brute-force shadow test
             foreach (IRaycastable obj in objects)
             {
+                // Skip self-intersection
                 if (obj.ObjectId == sourceObjectId)
                     continue;
 
                 var (hasHit, distance) = obj.Intersect(shadowRay);
+
+                // Only count intersections between us and the light
                 if (hasHit && distance > 0.001f && distance < lightDistance - adaptiveOffset)
                 {
-                    // Check if the object is transparent
-                    if (obj.Material.Transparency > 0.8f)
+                    // For soap bubbles, shadows are partial based on transparency
+                    if (obj is SoapBubble soapBubble)
                     {
-                        // Highly transparent objects don't cast shadows
-                        continue;
-                    }
-                    else if (obj.Material.Transparency > 0.2f)
-                    {
-                        // Partially transparent objects cast partial shadows
-                        // For simplicity, we'll just return false to allow some light through
-                        return false;
+                        // Partial shadow based on bubble's transparency
+                        return false; // Simplified - we'll let soap bubbles transmit light without casting shadows
                     }
 
                     return true; // In shadow from a regular object
@@ -349,13 +355,6 @@ namespace Common
             }
 
             return false; // Not in shadow
-        }
-
-        // Helper method to calculate reflection vector
-        private Vector3D CalculateReflection(Vector3D incident, Vector3D normal)
-        {
-            float dot = incident.Dot(normal);
-            return incident - normal * (2 * dot);
         }
 
         public void SetMaxReflectionDepth(int depth)
@@ -366,6 +365,22 @@ namespace Common
         public int GetMaxReflectionDepth()
         {
             return maxReflectionDepth;
+        }
+
+        // Helper method to clamp a value between min and max
+        private int ClampValue(int value, int min, int max)
+        {
+            if (value < min) return min;
+            if (value > max) return max;
+            return value;
+        }
+
+        // Helper method to clamp a float value between min and max
+        private float ClampValue(float value, float min, float max)
+        {
+            if (value < min) return min;
+            if (value > max) return max;
+            return value;
         }
     }
 }

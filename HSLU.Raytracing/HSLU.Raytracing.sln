@@ -43,6 +43,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalfTransparent", "HalfTran
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoapBubbles", "SoapBubbles\SoapBubbles.csproj", "{70495338-3C29-4B5F-840E-D1EF67117D02}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinalProject", "FinalProject\FinalProject.csproj", "{1C71126F-FF66-43C1-BAAA-64BDF6E422F2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -129,6 +131,10 @@ Global
 		{70495338-3C29-4B5F-840E-D1EF67117D02}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70495338-3C29-4B5F-840E-D1EF67117D02}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70495338-3C29-4B5F-840E-D1EF67117D02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C71126F-FF66-43C1-BAAA-64BDF6E422F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C71126F-FF66-43C1-BAAA-64BDF6E422F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C71126F-FF66-43C1-BAAA-64BDF6E422F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C71126F-FF66-43C1-BAAA-64BDF6E422F2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
