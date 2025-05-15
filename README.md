@@ -52,3 +52,33 @@ The culmination of the project featuring different primitive types (sphere and c
 
 ### Stage 10: Reflection Scene
 ![3D Geometric Scene](Images/reflection_scene.png)
+
+### Stage 11: Colored Environment Interaction
+![Colorful Room Scene](Images/colored_room_scene_222.png)
+
+Exploring how objects interact with a colorful environment, with the room's magenta, cyan, and yellow walls creating complex reflection patterns on the spheres.
+
+### Stage 12: Material Property Exploration
+![Solid Objects in Colored Room](Images/colored_room_solid_objects_222.png)
+
+Demonstration of how different solid materials interact with colored lighting, showing subtle differences in reflectivity and surface properties.
+
+### Stage 13: Transparency and Refraction
+![Transparent Adjusted Objects](Images/colored_room_transparent_adjusted_222.png)
+
+Implementing transparency and refraction to show how light passes through transparent objects, bending and distorting the view of objects behind them.
+
+### Stage 14: Low-Light Environment
+![Dim Lighting Conditions](Images/colored_room_very_dim_222.png)
+
+Testing the raytracer's capabilities in low-light conditions, showing how objects still maintain their form and material properties with minimal illumination.
+
+### Stage 15: Minimalist Scene with Focused Materials
+![Gray and Green Spheres with Cube](Images/gray_green_cube_scene_222.png)
+
+A focused study of material interaction in a minimalist setting with high contrast, showcasing the subtle reflections and shadows on a dark reflective surface.
+
+### Stage 16: Final High-Quality Render
+![High Quality Render with Text](Images/high_quality_render.png)
+
+The culmination of all implemented features - a high-quality render displaying a glass sphere with proper refraction, showing text positioned behind it and surrounded by decorative colored spheres.
