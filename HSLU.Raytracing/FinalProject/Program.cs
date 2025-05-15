@@ -65,30 +65,32 @@ namespace OptimizedTextRender
             // Create scene
             var scene = new OptimizedScene();
 
-            // Position camera
-            var camera = new Camera(new Vector3D(0, 1.0f, -6.0f));
+            // Position camera - MODIFIED: moved camera back slightly for better view
+            var camera = new Camera(new Vector3D(0, 1.5f, -7.0f));
 
             // Create materials
-            var wallMaterial = Material.Create(MaterialType.WHITE_RUBBER, 0.1f);
-            var textMaterial = Material.Create(MaterialType.GOLD, 0.4f);
+            var wallMaterial = Material.Create(MaterialType.WHITE_RUBBER, 0.05f); // Reduced reflectivity
 
-            // Create glass material with high transparency and reflectivity
+            // MODIFIED: Increased reflectivity of text for better visibility
+            var textMaterial = Material.Create(MaterialType.GOLD, 0.6f);
+
+            // MODIFIED: Create improved glass material with better transparency
             var glassMaterial = new Material(
                 MaterialType.CHROME,
-                new MyColor(10, 10, 10),     // Very low ambient
-                new MyColor(180, 180, 200),  // Light blue-ish diffuse
-                new MyColor(255, 255, 255),  // Bright white specular
-                0.95f,                       // Very high shininess
-                0.3f,                        // Medium reflectivity
-                0.95f                        // High transparency
+                new MyColor(5, 5, 5),      // Very low ambient (reduced from 10)
+                new MyColor(90, 90, 100),  // Light blue-ish diffuse (reduced from 180)
+                new MyColor(255, 255, 255), // Bright white specular
+                0.98f,                     // Very high shininess
+                0.25f,                     // Slightly reduced reflectivity for better transparency
+                0.98f                      // Very high transparency
             );
 
             Console.WriteLine("Setting up scene...");
 
-            // Set up the lighting for the scene
+            // MODIFIED: Set up the lighting with reduced intensity
             SetupLighting(scene);
 
-            // Add the room
+            // Add the room with slightly darker walls
             Room.AddRoom(scene, new Vector3D(0, 0, 0), 12f, 8f, 16f, wallMaterial);
 
             Console.WriteLine("Importing 3D text model...");
@@ -99,12 +101,12 @@ namespace OptimizedTextRender
                 // Import the 3D text from OBJ file
                 var objImporter = new ObjModelImporter();
 
-                // Load the 3D text with proper positioning, scale, and rotation
+                // MODIFIED: Adjusted text position and scale
                 List<Triangle> textTriangles = objImporter.ImportObj(
                     objFilePath,
                     textMaterial,
-                    new Vector3D(0, 0.5f, 4),  // Position at the back of the room
-                    0.5f,                      // Scale 
+                    new Vector3D(0, 0.5f, 5),  // Position further back for better visibility
+                    0.7f,                      // Slightly larger scale for better visibility
                     new Vector3D(0, 0, 0)      // No rotation
                 );
 
@@ -133,19 +135,19 @@ namespace OptimizedTextRender
                     scene.AddObject(triangle);
                 }
 
-                // Add a glass sphere in front of the text
+                // MODIFIED: Adjusted glass sphere position and properties
                 scene.AddObject(new GlassSphere(
-                    new Vector3D(0, 0.5f, 0),  // Position between camera and text
-                    1.5f,                      // Radius
+                    new Vector3D(0, 0.7f, 0),  // Moved slightly higher
+                    1.7f,                      // Slightly larger radius
                     glassMaterial,
-                    1.5f                       // Refractive index for glass
+                    1.45f                      // Reduced refractive index for better visibility (was 1.5)
                 ));
 
                 // Add a pedestal for the glass sphere
                 scene.AddObject(new RotatedCube(
                     new Vector3D(0, -1.2f, 0),  // Position below the sphere
                     0.7f,                       // Size
-                    Material.Create(MaterialType.SILVER, 0.4f),
+                    Material.Create(MaterialType.SILVER, 0.3f), // Reduced reflectivity
                     0f, 0f, 0f                  // No rotation
                 ));
 
@@ -172,77 +174,79 @@ namespace OptimizedTextRender
 
         private static void SetupLighting(OptimizedScene scene)
         {
-            // Main key light - bright white light
+            // MODIFIED: Reduced light intensities and adjusted positions
+
+            // Main key light - bright white light (reduced intensity)
             scene.AddLight(new Light(
-                new Vector3D(3, 4, -3),
-                new MyColor(255, 255, 255),  // Pure white
-                1.0f                         // Full intensity
+                new Vector3D(3, 5, -3),     // Moved higher up
+                new MyColor(255, 255, 255), // Pure white
+                0.6f                        // Reduced intensity (was 1.0)
             ));
 
-            // Fill light from opposite side
+            // Fill light from opposite side (reduced intensity)
             scene.AddLight(new Light(
                 new Vector3D(-4, 2, -2),
-                new MyColor(220, 220, 255),  // Slightly blue
-                0.7f                         // Medium intensity
+                new MyColor(220, 220, 255), // Slightly blue
+                0.4f                        // Reduced intensity (was 0.7)
             ));
 
-            // Back light - helps separate objects from background
+            // Back light - helps separate objects from background (reduced intensity)
             scene.AddLight(new Light(
-                new Vector3D(0, 2, 6),
-                new MyColor(255, 240, 220),  // Warm white
-                0.8f                         // Medium-high intensity
+                new Vector3D(0, 3, 7),      // Moved higher and further back
+                new MyColor(255, 240, 220), // Warm white
+                0.5f                        // Reduced intensity (was 0.8)
             ));
 
-            // Add a colored accent light for interest
+            // Add a colored accent light for interest (reduced intensity)
             scene.AddLight(new Light(
                 new Vector3D(-3, 1, 1),
-                new MyColor(200, 150, 255),  // Purple
-                0.5f                         // Medium-low intensity
+                new MyColor(200, 150, 255), // Purple
+                0.3f                        // Reduced intensity (was 0.5)
             ));
 
-            // Add a low light from below for drama
+            // Add a low light from below for drama (reduced intensity)
             scene.AddLight(new Light(
                 new Vector3D(1, -3, -1),
-                new MyColor(255, 200, 150),  // Warm orange
-                0.4f                         // Low intensity
+                new MyColor(255, 200, 150), // Warm orange
+                0.25f                       // Reduced intensity (was 0.4)
             ));
         }
 
         private static void AddDecorativeSpheres(OptimizedScene scene)
         {
-            // Add some small decorative spheres around the scene
+            // MODIFIED: Repositioned decorative spheres to reduce clutter
 
             // Gold sphere
             scene.AddObject(new Sphere(
-                new Vector3D(-2.5f, -0.8f, 1.5f),
+                new Vector3D(-2.5f, -0.8f, 1.8f), // Moved slightly back
                 0.4f,
                 Material.Create(MaterialType.GOLD, 0.6f)
             ));
 
             // Ruby sphere
             scene.AddObject(new Sphere(
-                new Vector3D(2.5f, -0.9f, 1.2f),
+                new Vector3D(2.5f, -0.9f, 1.5f), // Moved slightly back
                 0.35f,
                 Material.Create(MaterialType.RUBY, 0.5f)
             ));
 
             // Emerald sphere
             scene.AddObject(new Sphere(
-                new Vector3D(2.2f, -0.7f, -1.0f),
+                new Vector3D(2.2f, -0.7f, -1.3f), // Moved slightly back
                 0.3f,
                 Material.Create(MaterialType.EMERALD, 0.5f)
             ));
 
             // Silver sphere
             scene.AddObject(new Sphere(
-                new Vector3D(-1.8f, -0.9f, -1.2f),
+                new Vector3D(-1.8f, -0.9f, -1.5f), // Moved slightly back
                 0.25f,
                 Material.Create(MaterialType.SILVER, 0.7f)
             ));
 
             // Jade sphere
             scene.AddObject(new Sphere(
-                new Vector3D(0f, -0.8f, 2.5f),
+                new Vector3D(0f, -0.8f, 2.8f), // Moved further back
                 0.3f,
                 Material.Create(MaterialType.JADE, 0.4f)
             ));

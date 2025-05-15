@@ -126,8 +126,8 @@ namespace Common
                 }
                 else
                 {
-                    // For glass sphere, shadows are partial
-                    inShadow = false; // Simplified - glass lets most light through
+                    // MODIFIED: For glass sphere, use special shadow calculation that allows more light through
+                    inShadow = false; // Glass lets most light through
                 }
 
                 if (!inShadow || isGlassSphere) // Glass lets some light through
@@ -135,10 +135,10 @@ namespace Common
                     // Calculate diffuse lighting using Lambert's cosine law
                     float diffuseFactor = Math.Max(0, cosAngle);
 
-                    // Scale down diffuse for glass for a more realistic look
+                    // MODIFIED: Scale down diffuse for glass for a more realistic look
                     if (isGlassSphere)
                     {
-                        diffuseFactor *= 0.3f; // Reduce diffuse component for glass
+                        diffuseFactor *= 0.2f; // Further reduced diffuse component for glass (was 0.3f)
                     }
 
                     // Apply diffuse lighting
@@ -152,11 +152,11 @@ namespace Common
                         Vector3D reflection = CalculateReflection(-lightDirection, normal);
                         float specularFactor = Math.Max(0, reflection.Dot(-ray.Direction));
 
-                        // Sharper specular for glass
+                        // MODIFIED: Sharper specular for glass
                         float shininessPower = material.Shininess * 128;
                         if (isGlassSphere)
                         {
-                            shininessPower = 256; // Even sharper highlights for glass
+                            shininessPower = 300; // Even sharper highlights for glass (was 256)
                         }
 
                         specularFactor = (float)Math.Pow(specularFactor, shininessPower);
@@ -196,24 +196,27 @@ namespace Common
             {
                 if (isGlassSphere)
                 {
-                    // For glass sphere, use proper refraction
+                    // MODIFIED: For glass sphere, use improved refraction calculation
                     GlassSphere glassSphere = (GlassSphere)obj;
 
                     // Calculate refracted direction
                     Vector3D refractedDir = CalculateRefraction(ray.Direction, normal, glassSphere.RefractionIndex);
 
-                    // Small offset to avoid self-intersection
-                    Ray refractedRay = new Ray(hitPoint + refractedDir * 0.01f, refractedDir);
+                    // Small offset to avoid self-intersection - MODIFIED: increased offset slightly
+                    Ray refractedRay = new Ray(hitPoint + refractedDir * 0.015f, refractedDir);
 
                     // Trace the refracted ray
                     MyColor refractedColor = Trace(refractedRay, depth + 1);
 
-                    // Calculate Fresnel factor for realistic angle-dependent reflectivity
+                    // MODIFIED: Calculate Fresnel factor with adjusted parameters
                     float r0 = (1.0f - glassSphere.RefractionIndex) / (1.0f + glassSphere.RefractionIndex);
                     r0 = r0 * r0;
 
                     float viewDot = Math.Abs(normal.Dot(-ray.Direction));
                     float fresnelFactor = r0 + (1.0f - r0) * (float)Math.Pow(1.0f - viewDot, 5.0f);
+
+                    // Reduce Fresnel effect slightly to allow more light through
+                    fresnelFactor *= 0.85f;
 
                     // If we haven't calculated reflection yet, do it now
                     if (reflectivity <= 0)
@@ -223,11 +226,11 @@ namespace Common
                         reflectionColor = Trace(reflectionRay, depth + 1);
                     }
 
-                    // Mix colors based on Fresnel (more reflective at glancing angles)
-                    float effectiveReflectivity = Math.Max(reflectivity, fresnelFactor);
-                    float effectiveTransparency = transparency * (1.0f - fresnelFactor * 0.8f);
+                    // MODIFIED: Mix colors with adjusted parameters for better transparency
+                    float effectiveReflectivity = Math.Max(reflectivity * 0.7f, fresnelFactor * 0.7f);
+                    float effectiveTransparency = transparency * (1.0f - fresnelFactor * 0.5f);
 
-                    // Blend colors
+                    // MODIFIED: Blend colors with more weight on transparency
                     float totalEffect = effectiveReflectivity + effectiveTransparency;
                     float remainingColor = Math.Max(0, 1.0f - totalEffect);
 
