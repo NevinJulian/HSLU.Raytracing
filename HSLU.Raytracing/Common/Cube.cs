@@ -20,7 +20,7 @@
             Size = size;
             Color = color;
             Material = Common.Material.Create(materialType, reflectivity);
-            RotationX = rotationX * MathF.PI / 180f; // Convert to radians
+            RotationX = rotationX * MathF.PI / 180f;
             RotationY = rotationY * MathF.PI / 180f;
             RotationZ = rotationZ * MathF.PI / 180f;
             Triangles = CreateTriangles();
@@ -31,8 +31,8 @@
             Center = center;
             Size = size;
             Material = material;
-            Color = material.Diffuse; // Use diffuse color as the main color
-            RotationX = rotationX * MathF.PI / 180f; // Convert to radians
+            Color = material.Diffuse;
+            RotationX = rotationX * MathF.PI / 180f;
             RotationY = rotationY * MathF.PI / 180f;
             RotationZ = rotationZ * MathF.PI / 180f;
             Triangles = CreateTriangles();
@@ -40,12 +40,10 @@
 
         private List<Triangle> CreateTriangles()
         {
-            List<Triangle> result = new(12); // A cube has 12 triangles (2 per face)
+            List<Triangle> result = new(12);
 
-            // Calculate half-size for vertex positions
             float hs = Size / 2.0f;
 
-            // Define the 8 vertices of the cube (before rotation)
             Vector3D[] vertices = new Vector3D[8];
             vertices[0] = new Vector3D(-hs, -hs, -hs); // bottom-left-back
             vertices[1] = new Vector3D(hs, -hs, -hs);  // bottom-right-back
@@ -56,7 +54,6 @@
             vertices[6] = new Vector3D(hs, hs, hs);    // top-right-front
             vertices[7] = new Vector3D(-hs, hs, hs);   // top-left-front
 
-            // Apply rotations and translation to all vertices
             for (int i = 0; i < vertices.Length; i++)
             {
                 vertices[i] = RotateVertex(vertices[i]);
@@ -98,14 +95,11 @@
 
             for (int i = 0; i < result.Count; i++)
             {
-                // Make sure triangle normal points outward from cube center
                 Vector3D centroid = (result[i].V1 + result[i].V2 + result[i].V3) * (1.0f / 3.0f);
                 Vector3D toCenter = Center - centroid;
 
-                // If normal points toward center, flip it
                 if (result[i].Normal.Dot(toCenter) > 0)
                 {
-                    // Swap two vertices to flip the normal
                     Vector3D temp = result[i].V2;
                     result[i] = new Triangle(result[i].V1, result[i].V3, temp, result[i].Material);
                 }
@@ -116,15 +110,12 @@
 
         private Vector3D RotateVertex(Vector3D v)
         {
-            // Apply X rotation
             float y1 = v.Y * MathF.Cos(RotationX) - v.Z * MathF.Sin(RotationX);
             float z1 = v.Y * MathF.Sin(RotationX) + v.Z * MathF.Cos(RotationX);
 
-            // Apply Y rotation
             float x2 = v.X * MathF.Cos(RotationY) + z1 * MathF.Sin(RotationY);
             float z2 = -v.X * MathF.Sin(RotationY) + z1 * MathF.Cos(RotationY);
 
-            // Apply Z rotation
             float x3 = x2 * MathF.Cos(RotationZ) - y1 * MathF.Sin(RotationZ);
             float y3 = x2 * MathF.Sin(RotationZ) + y1 * MathF.Cos(RotationZ);
 
@@ -136,7 +127,6 @@
             bool hasHit = false;
             float closestDistance = float.MaxValue;
 
-            // Check intersection with all triangles
             foreach (Triangle triangle in Triangles)
             {
                 var (triangleHit, distance) = triangle.Intersect(ray);
@@ -152,13 +142,11 @@
 
         public Vector3D GetNormal(Vector3D intersectionPoint)
         {
-            // Find the triangle closest to intersection point
             Triangle? closestTriangle = null;
             float minDistance = float.MaxValue;
 
             foreach (var triangle in Triangles)
             {
-                // Calculate distance to triangle plane
                 float distance = Math.Abs(triangle.Normal.Dot(intersectionPoint - triangle.V1));
 
                 if (distance < minDistance)
@@ -168,7 +156,6 @@
                 }
             }
 
-            // Return normal of closest triangle, ensuring it's properly normalized
             return closestTriangle?.Normal.Normalize() ?? new Vector3D(0, 1, 0);
         }
     }

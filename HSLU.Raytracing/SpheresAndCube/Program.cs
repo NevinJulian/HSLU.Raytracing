@@ -7,7 +7,6 @@ const int height = 600;
 const string filePath = "spheres_and_cube.png";
 var random = new Random();
 
-// Create spheres
 var spheres = new List<Sphere>();
 int sphereCount = 100;
 for (int i = 0; i < sphereCount; i++)
@@ -21,11 +20,10 @@ for (int i = 0; i < sphereCount; i++)
     spheres.Add(new Sphere(position, radius, color));
 }
 
-// Create a blue cube in the scene - larger and rotated
 var cubeCenter = new Vector3D(400f, 300f, 150f);
-float cubeSize = 120f; // Increased size
-var cubeColor = new MyColor(0, 0, 255); // Blue
-var cube = new Cube(cubeCenter, cubeSize, cubeColor, 45f); // 45-degree rotation
+float cubeSize = 120f;
+var cubeColor = new MyColor(0, 0, 255);
+var cube = new Cube(cubeCenter, cubeSize, cubeColor, 45f);
 
 using (var image = new Image<Rgba32>(width, height))
 {
@@ -39,18 +37,15 @@ using (var image = new Image<Rgba32>(width, height))
             bool pixelRendered = false;
             Vector3D normal = new Vector3D();
 
-            // Check cube intersection
             var (cubeHit, cubeDepth, cubeNormal) = cube.IntersectRay(pixel);
             if (cubeHit && cubeDepth > maxDepth)
             {
                 maxDepth = cubeDepth;
                 normal = cubeNormal;
 
-                // Apply diffuse lighting based on normal
-                float normalZ = Math.Abs(cubeNormal.Z); // Use absolute value for lighting both sides
+                float normalZ = Math.Abs(cubeNormal.Z);
                 double shading = 0.3 + 0.7 * normalZ;
 
-                // Apply depth factor for distance effect
                 double depthFactor = 1 - ((cubeDepth - 20) / 300.0);
                 depthFactor = Math.Clamp(depthFactor, 0.8, 1.0);
 
@@ -62,7 +57,6 @@ using (var image = new Image<Rgba32>(width, height))
                 pixelRendered = true;
             }
 
-            // Check sphere intersections
             foreach (var sphere in spheres.OrderByDescending(s => s.Center.Z))
             {
                 if (sphere.IsInSphere(pixel))

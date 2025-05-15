@@ -11,15 +11,9 @@ namespace SpheresRender
             const int height = 900;
             const string filePath = "colored_room_transparent_adjusted.png";
 
-            // Create scene
             var scene = new Scene();
-
-            // Set up the camera - positioned to view inside the room
             var camera = new Camera(new Vector3D(0, 0, -3.0));
 
-            // Create materials for each object and wall
-
-            // Transparent silver sphere material - LESS TRANSPARENT
             var transparentSilverMaterial = new Material(
                 MaterialType.SILVER,
                 new MyColor(20, 20, 20),      // Dark ambient
@@ -139,7 +133,6 @@ namespace SpheresRender
                 30f, 45f, 15f                     // Rotation angles
             ));
 
-            // Create the room walls
             float roomSize = 3.0f;
 
             // Floor (dark)

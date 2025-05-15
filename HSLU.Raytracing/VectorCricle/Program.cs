@@ -15,26 +15,23 @@ static bool IsInCircle(Vector2D pixel, Vector2D circleCenter, int radius)
     return pixel.EuclideanDistance(circleCenter) <= radius;
 }
 
-// Create a SkiaSharp bitmap (raster surface)
 var bitmap = new SKBitmap(width, height);
 
-// Get the pixel buffer
 for (int y = 0; y < height; y++)
 {
     for (int x = 0; x < width; x++)
     {
-        var color = SKColor.Parse("#000000"); // background color is black
+        var color = SKColor.Parse("#000000");
 
         var pixel = new Vector2D(x, y);
         if (IsInCircle(pixel, circleCenter, circleRadius))
         {
-            color = SKColor.Parse("#00FF00"); // circle color is green
+            color = SKColor.Parse("#00FF00");
         }
         bitmap.SetPixel(x, y, color);
     }
 }
 
-// Save the image as PNG
 using (var fs = new FileStream(filePath, FileMode.Create))
 {
     bitmap.Encode(fs, SKEncodedImageFormat.Png, 100);

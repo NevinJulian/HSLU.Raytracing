@@ -3,8 +3,6 @@ using System.Collections.Generic;
 
 namespace Common
 {
-    // This is a modified version of the Scene class with enhanced refraction support
-    // You can integrate these changes into your existing Scene.cs file
     public class Scene
     {
         private readonly List<IRaycastable> objects;
@@ -73,68 +71,56 @@ namespace Common
             Vector3D hitPoint = hitInfo.HitPoint;
             Vector3D normal = hitInfo.Normal;
 
-            // Special handling for glass sphere
             bool isGlassSphere = obj is GlassSphere;
 
-            // Initialize color components with ambient light
             int red = (int)(material.Ambient.R);
             int green = (int)(material.Ambient.G);
             int blue = (int)(material.Ambient.B);
 
             foreach (Light light in lights)
             {
-                // Calculate light vector and distance
                 Vector3D lightVector = light.Position - hitPoint;
                 float lightDistance = lightVector.Length;
-                Vector3D lightDirection = lightVector * (1.0f / lightDistance); // Normalize
+                Vector3D lightDirection = lightVector * (1.0f / lightDistance);
 
-                // Calculate dot product with normal for diffuse lighting
                 float cosAngle = normal.Dot(lightDirection);
 
-                // Shadow check - for glass we make it partial
                 bool inShadow = false;
-                if (!isGlassSphere) // Standard shadow test for non-glass objects
+                if (!isGlassSphere)
                 {
                     inShadow = IsPointInShadow(hitPoint, normal, lightDirection, lightDistance, obj.ObjectId);
                 }
                 else
                 {
-                    // For glass sphere, we want partial shadows
                     inShadow = IsPartiallyInShadow(hitPoint, normal, lightDirection, lightDistance, obj.ObjectId);
                 }
 
-                if (!inShadow || isGlassSphere) // Glass lets some light through
+                if (!inShadow || isGlassSphere)
                 {
-                    // Calculate diffuse lighting using Lambert's cosine law
                     float diffuseFactor = MathF.Max(0, cosAngle);
 
-                    // Scale down diffuse for glass for a more realistic look
                     if (isGlassSphere)
                     {
-                        diffuseFactor *= 0.3f; // Reduce diffuse component for glass
+                        diffuseFactor *= 0.3f;
                     }
 
-                    // Apply diffuse lighting
                     red += (int)(obj.Color.R * light.Intensity * diffuseFactor * light.Color.R / 255.0f);
                     green += (int)(obj.Color.G * light.Intensity * diffuseFactor * light.Color.G / 255.0f);
                     blue += (int)(obj.Color.B * light.Intensity * diffuseFactor * light.Color.B / 255.0f);
 
-                    // Add specular highlights
                     if (material.Shininess > 0)
                     {
                         Vector3D reflection = CalculateReflection(-lightDirection, normal);
                         float specularFactor = MathF.Max(0, reflection.Dot(-ray.Direction));
 
-                        // Sharper specular for glass
                         float shininessPower = material.Shininess * 128;
                         if (isGlassSphere)
                         {
-                            shininessPower = 256; // Even sharper highlights for glass
+                            shininessPower = 256;
                         }
 
                         specularFactor = MathF.Pow(specularFactor, shininessPower);
 
-                        // Add specular highlight
                         red += (int)(material.Specular.R * light.Intensity * specularFactor * light.Color.R / 255.0f);
                         green += (int)(material.Specular.G * light.Intensity * specularFactor * light.Color.G / 255.0f);
                         blue += (int)(material.Specular.B * light.Intensity * specularFactor * light.Color.B / 255.0f);
@@ -142,17 +128,14 @@ namespace Common
                 }
             }
 
-            // Add reflection component if we haven't reached the maximum depth
             float reflectivity = material.Reflectivity;
             if (reflectivity > 0 && depth < maxReflectionDepth)
             {
                 Vector3D reflectionDir = CalculateReflection(ray.Direction, normal);
                 Ray reflectionRay = new Ray(hitPoint + normal * 0.01f, reflectionDir);
 
-                // Get the color from the reflection ray
                 MyColor reflectionColor = Trace(reflectionRay, depth + 1);
 
-                // Standard reflection for non-glass objects
                 if (!isGlassSphere)
                 {
                     red = (int)(red * (1.0f - reflectivity) + reflectionColor.R * reflectivity);
@@ -161,44 +144,31 @@ namespace Common
                 }
                 else
                 {
-                    // For glass objects, we'll handle reflection with Fresnel later
-                    // Just store the reflection color for now
                     var savedReflectionColor = reflectionColor;
                     reflectionColor = savedReflectionColor;
                 }
             }
 
-            // Add transparency/refraction component if we haven't reached the maximum depth
             float transparency = material.Transparency;
             if (transparency > 0 && depth < maxReflectionDepth)
             {
                 if (isGlassSphere)
                 {
-                    // For glass sphere, use proper refraction
                     GlassSphere glassSphere = (GlassSphere)obj;
-
-                    // Calculate refracted direction
                     Vector3D refractedDir = CalculateRefraction(ray.Direction, normal, glassSphere.RefractionIndex);
-
-                    // Small offset to avoid self-intersection
                     Ray refractedRay = new Ray(hitPoint + refractedDir * 0.01f, refractedDir);
-
-                    // Trace the refracted ray
                     MyColor refractedColor = Trace(refractedRay, depth + 1);
 
-                    // Calculate Fresnel factor for realistic angle-dependent reflectivity
                     float r0 = (1.0f - glassSphere.RefractionIndex) / (1.0f + glassSphere.RefractionIndex);
                     r0 = r0 * r0;
 
                     float viewDot = MathF.Abs(normal.Dot(-ray.Direction));
                     float fresnelFactor = r0 + (1.0f - r0) * MathF.Pow(1.0f - viewDot, 5.0f);
 
-                    // Re-trace reflection ray for Fresnel
                     Vector3D reflectionDir = CalculateReflection(ray.Direction, normal);
                     Ray reflectionRay = new Ray(hitPoint + normal * 0.01f, reflectionDir);
                     MyColor reflectionColor = Trace(reflectionRay, depth + 1);
 
-                    // Mix colors based on Fresnel (more reflective at glancing angles)
                     float effectiveReflectivity = reflectivity + (1.0f - reflectivity) * fresnelFactor;
                     float effectiveTransparency = transparency * (1.0f - fresnelFactor * 0.8f);
 
@@ -216,7 +186,6 @@ namespace Common
                 }
                 else
                 {
-                    // Standard transparency for other objects
                     Ray transparencyRay = new Ray(hitPoint + ray.Direction * 0.01f, ray.Direction);
                     MyColor transparencyColor = Trace(transparencyRay, depth + 1);
 
@@ -226,7 +195,6 @@ namespace Common
                 }
             }
 
-            // Clamp RGB values to valid range [0-255]
             red = Math.Clamp(red, 0, 255);
             green = Math.Clamp(green, 0, 255);
             blue = Math.Clamp(blue, 0, 255);
@@ -234,10 +202,8 @@ namespace Common
             return new MyColor(red, green, blue);
         }
 
-        // Calculate refraction direction using Snell's law
         private Vector3D CalculateRefraction(Vector3D incident, Vector3D normal, float indexOfRefraction)
         {
-            // Custom clamp function since MathF.Clamp might not be available in all .NET versions
             float ClampValue(float value, float min, float max)
             {
                 if (value < min) return min;
@@ -250,14 +216,12 @@ namespace Common
             float etat = indexOfRefraction;
             Vector3D n = normal;
 
-            // Check if we're inside the object
             if (cosi < 0)
             {
                 cosi = -cosi;
             }
             else
             {
-                // Swap indices of refraction and flip normal
                 float temp = etai;
                 etai = etat;
                 etat = temp;
@@ -267,18 +231,14 @@ namespace Common
             float eta = etai / etat;
             float k = 1.0f - eta * eta * (1.0f - cosi * cosi);
 
-            // Total internal reflection
             if (k < 0)
             {
-                // Calculate reflection
                 return incident - normal * (2.0f * incident.Dot(normal));
             }
 
-            // Refraction using Snell's law
             return incident * eta + n * (eta * cosi - MathF.Sqrt(k));
         }
 
-        // Shadow test with partial shadows for transparent objects
         private bool IsPartiallyInShadow(Vector3D hitPoint, Vector3D normal, Vector3D lightDir, float lightDistance, int sourceObjectId)
         {
             const float BASE_EPSILON = 0.15f;
@@ -297,22 +257,18 @@ namespace Common
                 var (hasHit, distance) = obj.Intersect(shadowRay);
                 if (hasHit && distance > 0.001f && distance < lightDistance - adaptiveOffset)
                 {
-                    // If the shadowing object is glass or transparent, it casts only partial shadow
                     if (obj is GlassSphere || obj.Material.Transparency > 0.5f)
                     {
-                        // Transparent objects allow most light through
                         return false;
                     }
 
-                    // Otherwise it's a solid object casting a full shadow
                     return true;
                 }
             }
 
-            return false; // Not in shadow
+            return false;
         }
 
-        // Regular shadow test for opaque objects
         private bool IsPointInShadow(Vector3D hitPoint, Vector3D normal, Vector3D lightDir, float lightDistance, int sourceObjectId)
         {
             const float BASE_EPSILON = 0.1f;
@@ -331,27 +287,22 @@ namespace Common
                 var (hasHit, distance) = obj.Intersect(shadowRay);
                 if (hasHit && distance > 0.001f && distance < lightDistance - adaptiveOffset)
                 {
-                    // Check if the object is transparent
                     if (obj.Material.Transparency > 0.8f)
                     {
-                        // Highly transparent objects don't cast shadows
                         continue;
                     }
                     else if (obj.Material.Transparency > 0.2f)
                     {
-                        // Partially transparent objects cast partial shadows
-                        // For simplicity, we'll just return false to allow some light through
                         return false;
                     }
 
-                    return true; // In shadow from a regular object
+                    return true;
                 }
             }
 
-            return false; // Not in shadow
+            return false;
         }
 
-        // Helper method to calculate reflection vector
         private Vector3D CalculateReflection(Vector3D incident, Vector3D normal)
         {
             float dot = incident.Dot(normal);

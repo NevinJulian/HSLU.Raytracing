@@ -8,7 +8,7 @@
         public MyColor Specular { get; }
         public float Shininess { get; }
         public float Reflectivity { get; }
-        public float Transparency { get; } // Added transparency property
+        public float Transparency { get; }
 
         public Material(MaterialType type, MyColor ambient, MyColor diffuse, MyColor specular,
                         float shininess, float reflectivity, float transparency = 0.0f)
@@ -18,8 +18,8 @@
             Diffuse = diffuse;
             Specular = specular;
             Shininess = shininess;
-            Reflectivity = Math.Clamp(reflectivity, 0f, 1f); // Clamp reflectivity between 0 and 1
-            Transparency = Math.Clamp(transparency, 0f, 1f); // Clamp transparency between 0 and 1
+            Reflectivity = Math.Clamp(reflectivity, 0f, 1f);
+            Transparency = Math.Clamp(transparency, 0f, 1f);
         }
 
         public static Material Create(MaterialType type, float reflectivity, float transparency = 0.0f)
@@ -56,7 +56,6 @@
                     new MyColor((int)(0.7f * 255), (int)(0.6f * 255), (int)(0.6f * 255)),
                     0.25f, reflectivity, transparency),
 
-                // Default to a gray plastic if type not specifically handled
                 _ => new Material(type,
                     new MyColor((int)(0.05f * 255), (int)(0.05f * 255), (int)(0.05f * 255)),
                     new MyColor((int)(0.5f * 255), (int)(0.5f * 255), (int)(0.5f * 255)),

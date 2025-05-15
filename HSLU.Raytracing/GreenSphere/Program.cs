@@ -6,7 +6,6 @@ const int width = 800;
 const int height = 600;
 const string filePath = "spheres.png";
 
-// Move the light source to the top-left
 var lightSource = new Vector3D(100, 100, 500);
 
 var spheres = new List<Sphere>
@@ -19,7 +18,7 @@ float AdjustBrightness(float baseBrightness, float factor)
     return Math.Clamp(baseBrightness * factor, 0, 1);
 }
 
-float brightnessFactor = 1.2f; // Increased brightness factor for sunrise effect
+float brightnessFactor = 1.2f;
 
 using (var image = new Image<Rgba32>(width, height))
 {
@@ -59,12 +58,10 @@ using (var image = new Image<Rgba32>(width, height))
                         Vector3D hitPoint = rayOrigin + rayDirection * pixelDepth;
                         Vector3D normal = (hitPoint - sphere.Center).Normalize();
 
-                        // Compute light direction from the hit point to the light source
                         Vector3D lightDir = (lightSource - hitPoint).Normalize();
                         double shading = Math.Max(0, normal.Dot(lightDir));
 
-                        // Adjust shading dynamically based on brightnessFactor to reveal more of the sphere
-                        double shadowFactor = Math.Pow(shading, 1.1) * brightnessFactor; // Soft exponential fade
+                        double shadowFactor = Math.Pow(shading, 1.1) * brightnessFactor;
                         double visibilityFactor = Math.Clamp(shadowFactor + (brightnessFactor - 1) * 0.5, 0, 1);
                         double brightness = AdjustBrightness((float)(depthFactor * visibilityFactor), brightnessFactor);
 

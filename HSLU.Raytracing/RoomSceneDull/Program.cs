@@ -11,13 +11,9 @@ namespace SpheresRender
             const int height = 900;
             const string filePath = "colored_room_very_dim.png";
 
-            // Create scene
             var scene = new Scene();
-
-            // Set up the camera - positioned to view inside the room
             var camera = new Camera(new Vector3D(0, 0, -3.0));
 
-            // Create materials for each object and wall
 
             // Silver sphere material - diffuse with reflective properties
             var silverSphereMaterial = new Material(
@@ -270,7 +266,7 @@ namespace SpheresRender
             Size = size;
             Material = baseMaterial;
             Color = baseMaterial.Diffuse;
-            RotationX = rotationX * MathF.PI / 180f; // Convert to radians
+            RotationX = rotationX * MathF.PI / 180f;
             RotationY = rotationY * MathF.PI / 180f;
             RotationZ = rotationZ * MathF.PI / 180f;
             Triangles = CreateTriangles();
@@ -278,12 +274,9 @@ namespace SpheresRender
 
         private List<Triangle> CreateTriangles()
         {
-            List<Triangle> result = new(12); // A cube has 12 triangles (2 per face)
+            List<Triangle> result = new(12);
 
-            // Calculate half-size for vertex positions
             float hs = Size / 2.0f;
-
-            // Define the 8 vertices of the cube (before rotation)
             Vector3D[] vertices = new Vector3D[8];
             vertices[0] = new Vector3D(-hs, -hs, -hs); // bottom-left-back
             vertices[1] = new Vector3D(hs, -hs, -hs);  // bottom-right-back
@@ -294,7 +287,6 @@ namespace SpheresRender
             vertices[6] = new Vector3D(hs, hs, hs);    // top-right-front
             vertices[7] = new Vector3D(-hs, hs, hs);   // top-left-front
 
-            // Apply rotations and translation to all vertices
             for (int i = 0; i < vertices.Length; i++)
             {
                 vertices[i] = RotateVertex(vertices[i]);
@@ -305,7 +297,6 @@ namespace SpheresRender
                 );
             }
 
-            // Create materials for each face with different colors
             var purpleMaterial = new Material(
                 MaterialType.RED_PLASTIC,
                 new MyColor(40, 0, 40),       // Ambient

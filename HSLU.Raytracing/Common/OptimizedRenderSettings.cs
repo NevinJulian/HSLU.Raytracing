@@ -11,9 +11,8 @@
         public bool UseAcceleration { get; set; } = true;
         public bool ShowProgressBar { get; set; } = true;
 
-        // Preview settings - lower quality for faster rendering
         public bool PreviewMode { get; set; } = false;
-        public float PreviewScale { get; set; } = 0.5f; // Half resolution in preview
+        public float PreviewScale { get; set; } = 0.5f;
 
         public string GetOutputFile()
         {
@@ -30,23 +29,22 @@
             return new OptimizedRenderSettings
             {
                 PreviewMode = true,
-                Width = 960,      // Half resolution
-                Height = 540,     // Half resolution
-                MaxReflectionDepth = 3, // Fewer reflections
-                UseAcceleration = true,  // Always use acceleration for preview
+                Width = 960,
+                Height = 540,
+                MaxReflectionDepth = 3,
+                UseAcceleration = true,
                 OutputFilename = "preview_render"
             };
         }
 
-        // Create a low-quality preview for quick testing
         public static OptimizedRenderSettings CreateQuickPreview()
         {
             return new OptimizedRenderSettings
             {
                 PreviewMode = true,
-                Width = 480,      // Quarter resolution
-                Height = 270,     // Quarter resolution
-                MaxReflectionDepth = 2, // Minimal reflections
+                Width = 480,
+                Height = 270,
+                MaxReflectionDepth = 2,
                 UseAcceleration = true,
                 OutputFilename = "quick_preview"
             };

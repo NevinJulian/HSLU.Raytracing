@@ -16,25 +16,22 @@ class Program
         const int circle_radius = 100;
         const string filePath = "skia_raster_image.png";
 
-        // Create a SkiaSharp bitmap (raster surface)
         var bitmap = new SKBitmap(width, height);
 
-        // Get the pixel buffer
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
-                var color = SKColor.Parse("#000000"); // background color is black
+                var color = SKColor.Parse("#000000");
 
                 if (IsInCircle(x, y, circle_center_x, circle_center_y, circle_radius))
                 {
-                    color = SKColor.Parse("#00FF00"); // circle color is green
+                    color = SKColor.Parse("#00FF00");
                 }
                 bitmap.SetPixel(x, y, color);
             }
         }
 
-        // Save the image as PNG
         using (var fs = new FileStream(filePath, FileMode.Create))
         {
             bitmap.Encode(fs, SKEncodedImageFormat.Png, 100);

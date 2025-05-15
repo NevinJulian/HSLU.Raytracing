@@ -12,13 +12,9 @@ namespace SpheresRender
             const int height = 900;
             const string filePath = "reference_scene.png";
 
-            // Create scene
             var scene = new Scene();
-
-            // Set up the camera with a much closer and lower view
             var camera = new Camera(new Vector3D(0, 0.8, -4.0));
 
-            // Create a white floor plane with two triangles
             var floorMaterial = new Material(
                 MaterialType.WHITE_PLASTIC,
                 new MyColor(30, 30, 30),      // Ambient
@@ -134,7 +130,6 @@ namespace SpheresRender
                 (MaterialType.PEARL, 0.2f),
             };
 
-            // Create a grid-based distribution with jitter
             int gridSizeX = 40;
             int gridSizeZ = 30;
             float gridWidth = 16f;
@@ -144,32 +139,27 @@ namespace SpheresRender
 
             List<Vector3D> spherePositions = new List<Vector3D>();
 
-            // Create distribution across the entire visible floor
             for (int i = 0; i < gridSizeX; i++)
             {
                 for (int j = 0; j < gridSizeZ; j++)
                 {
-                    // Skip some cells for variation
                     if (random.NextDouble() < 0.7)
                         continue;
 
-                    // Calculate base position
                     float baseX = i * cellWidth - gridWidth / 2 + cellWidth / 2;
                     float baseZ = j * cellDepth - gridDepth / 4 + cellDepth / 2;
 
-                    // Add jitter for natural appearance
                     float jitterX = (float)(random.NextDouble() * 0.8 - 0.4) * cellWidth;
                     float jitterZ = (float)(random.NextDouble() * 0.8 - 0.4) * cellDepth;
 
                     spherePositions.Add(new Vector3D(
                         baseX + jitterX,
-                        0,  // Y will be set based on radius
+                        0,
                         baseZ + jitterZ
                     ));
                 }
             }
 
-            // Shuffle positions for variety in material assignments
             for (int i = spherePositions.Count - 1; i > 0; i--)
             {
                 int j = random.Next(i + 1);
@@ -178,25 +168,19 @@ namespace SpheresRender
                 spherePositions[j] = temp;
             }
 
-            // Create spheres at the positions
             foreach (var position in spherePositions)
             {
-                // Skip positions too close to main spheres
                 if (IsNearMainSpheres(position))
                     continue;
 
-                // Randomize radius between 0.05 and 0.15
                 float radius = (float)(random.NextDouble() * 0.1 + 0.05);
 
-                // Set y position to rest on floor
                 float y = radius + floorY;
                 Vector3D finalPosition = new Vector3D(position.X, y, position.Z);
 
-                // Randomly select color and material
                 var color = colors[random.Next(colors.Count)];
                 var (materialType, reflectivity) = materialTypes[random.Next(materialTypes.Count)];
 
-                // Create glass spheres with higher probability
                 if (random.NextDouble() < 0.2)
                 {
                     var glassMaterial = new Material(
@@ -218,7 +202,6 @@ namespace SpheresRender
                 {
                     Material material;
 
-                    // Sometimes use predefined materials, sometimes create custom with the selected color
                     if (random.NextDouble() < 0.5)
                     {
                         material = Material.Create(materialType, reflectivity);
@@ -243,8 +226,6 @@ namespace SpheresRender
                 }
             }
 
-            // Set up lighting to get the right highlights and shadows
-            // Main light from behind camera
             scene.AddLight(new Light(
                 new Vector3D(0, 8, -8),
                 new MyColor(255, 255, 255),  // White light
@@ -283,10 +264,8 @@ namespace SpheresRender
             Console.WriteLine($"Image saved to {filePath}");
         }
 
-        // Helper method to check if a position is too close to main spheres
         private static bool IsNearMainSpheres(Vector3D position)
         {
-            // Main sphere positions
             var spherePositions = new List<Vector3D>
             {
                 new Vector3D(-3.0f, 1.0f, 0),
@@ -294,14 +273,11 @@ namespace SpheresRender
                 new Vector3D(3.0f, 1.0f, 0)
             };
 
-            // Check distance to each main sphere
             foreach (var center in spherePositions)
             {
-                // Project the position to y=1 plane for distance calculation
                 Vector3D projectedPos = new Vector3D(position.X, 1.0f, position.Z);
                 float distance = (projectedPos - center).Length;
 
-                // Keep small spheres away from directly under main spheres
                 if (distance < 1.2f)
                     return true;
             }

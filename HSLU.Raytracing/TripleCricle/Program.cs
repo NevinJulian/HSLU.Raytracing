@@ -6,7 +6,6 @@ const int width = 800;
 const int height = 600;
 const string filePath = "rgb_circles.png";
 
-// Define circles
 var circles = new List<Circle>
 {
     new Circle(new Vector2D(width / 2 - 100, height / 2 + 50), 150, MyColor.Red),
@@ -14,10 +13,8 @@ var circles = new List<Circle>
     new Circle(new Vector2D(width / 2, height / 2 - 50), 150, MyColor.Blue)
 };
 
-// Create an ImageSharp image
 using (var image = new Image<Rgba32>(width, height))
 {
-    // Fill background with black
     for (int y = 0; y < height; y++)
     {
         for (int x = 0; x < width; x++)
@@ -39,7 +36,6 @@ using (var image = new Image<Rgba32>(width, height))
         }
     }
 
-    // Save the image
     image.Save(filePath);
 }
 

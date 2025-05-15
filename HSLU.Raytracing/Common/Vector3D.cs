@@ -7,7 +7,6 @@ public readonly struct Vector3D
 
     public static Vector3D Zero => new Vector3D(0, 0, 0);
 
-    // Constructor for float values
     public Vector3D(float x, float y, float z)
     {
         X = x;
@@ -15,7 +14,6 @@ public readonly struct Vector3D
         Z = z;
     }
 
-    // Constructor for double values - converts to float
     public Vector3D(double x, double y, double z)
     {
         X = (float)x;
@@ -43,14 +41,12 @@ public readonly struct Vector3D
 
     public float Dot(Vector3D other) => (this.X * other.X) + (this.Y * other.Y) + (this.Z * other.Z);
 
-    // Cross product method for calculating normal vectors
     public Vector3D Cross(Vector3D other) => new(
         (Y * other.Z) - (Z * other.Y),
         (Z * other.X) - (X * other.Z),
         (X * other.Y) - (Y * other.X)
     );
 
-    // Added to align with Java implementation - calculate reflection direction
     public Vector3D ReflectAround(Vector3D normal)
     {
         float dot = this.Dot(normal);

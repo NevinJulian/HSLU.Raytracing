@@ -4,7 +4,6 @@ const int width = 800;
 const int height = 600;
 const string filePath = "room_scene_with_shadows.png";
 
-// Create a back wall (at Z=500)
 var backWall1 = new Triangle(
     new Vector3D(-2000, 2000, 500),         // Top-left
     new Vector3D(2000, 2000, 500),       // Top-right
@@ -19,7 +18,6 @@ var backWall2 = new Triangle(
     new MyColor(150, 150, 220)         // Light blue
 );
 
-// Add a floor plane with corrected vertex order
 var floor1 = new Triangle(
     new Vector3D(-2000, 0, 0),           // Back-left
     new Vector3D(-2000, 0, 500),         // Front-left
@@ -34,7 +32,6 @@ var floor2 = new Triangle(
     new MyColor(255, 255, 220)           // Light gray floor
 );
 
-// Position sphere and cube in the room
 var sphere = new Sphere(
     new Vector3D(500, 350, 250),       // Right side of room
     70,                                // Size
@@ -48,7 +45,6 @@ var cube = new RotatedCube(
     15f, 45f, 0f                       // Rotation angles
 );
 
-// Create light sources with better positioning
 var lights = new List<Light>
 {
     new Light(
@@ -63,10 +59,8 @@ var lights = new List<Light>
     )
 };
 
-// Create scene
 var scene = new Scene();
 
-// Add objects to the scene
 scene.AddObject(backWall1);
 scene.AddObject(backWall2);
 scene.AddObject(floor1);
@@ -74,26 +68,22 @@ scene.AddObject(floor2);
 scene.AddObject(sphere);
 scene.AddObject(cube);
 
-// Add lights to the scene
 foreach (var light in lights)
 {
     scene.AddLight(light);
 }
 
-// Create camera with a better viewing position
 var camera = new Camera(new Vector3D(400, 250, -150));
 
-// Create render settings with optimal parameters
 var settings = new RenderSettings
 {
     Width = width,
     Height = height,
-    MaxReflectionDepth = 0,  // Disabling reflections as requested
+    MaxReflectionDepth = 0,
     OutputFilename = filePath.Replace(".png", ""),
     OutputFormat = "png"
 };
 
-// Create ray tracer and render the scene
 var rayTracer = new RayTracer();
 rayTracer.RenderScene(scene, camera, settings);
 

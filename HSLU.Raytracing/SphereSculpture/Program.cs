@@ -30,28 +30,25 @@ using (var image = new Image<Rgba32>(width, height))
             double depthFactor = 1.0;
             bool pixelRendered = false;
 
-            foreach (var sphere in spheres.OrderByDescending(s => s.Center.Z)) // Sort for correct depth layering
+            foreach (var sphere in spheres.OrderByDescending(s => s.Center.Z))
             {
                 if (sphere.IsInSphere(pixel))
                 {
-                    // Calculate depth (Z-value) using the sphere equation
                     float dx = pixel.X - sphere.Center.X;
                     float dy = pixel.Y - sphere.Center.Y;
                     float dz = (float)Math.Sqrt(Math.Max(0, Math.Pow(sphere.Radius, 2) - (dx * dx + dy * dy)));
                     float pixelDepth = sphere.Center.Z + dz;
 
-                    if (pixelDepth > maxDepth) // Ensuring correct depth layering
+                    if (pixelDepth > maxDepth)
                     {
                         maxDepth = pixelDepth;
-                        depthFactor = 1 - ((pixelDepth - 50) / 200.0); // Depth cueing for smooth fading
-                        depthFactor = Math.Clamp(depthFactor, 0.7, 1.0); // More variation in depth cueing
+                        depthFactor = 1 - ((pixelDepth - 50) / 200.0); 
+                        depthFactor = Math.Clamp(depthFactor, 0.7, 1.0);
 
-                        // Simulating a spherical shading effect
                         double normalZ = dz / sphere.Radius;
                         double shading = 0.5 + 0.5 * normalZ;
                         double brightness = depthFactor * shading;
 
-                        // Only render spheres where they are visible
                         if (sphere != spheres[0] && spheres[0].IsInSphere(pixel) && pixelDepth <= spheres[0].Center.Z)
                         {
                             continue;

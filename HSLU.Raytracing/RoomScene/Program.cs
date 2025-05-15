@@ -11,13 +11,8 @@ namespace SpheresRender
             const int height = 900;
             const string filePath = "colored_room_scene.png";
 
-            // Create scene
             var scene = new Scene();
-
-            // Set up the camera - positioned to view inside the room
             var camera = new Camera(new Vector3D(0, 0, -3.0));
-
-            // Create materials for each object and wall
 
             // Reflective sphere material - highly reflective
             var sphereMaterial = new Material(

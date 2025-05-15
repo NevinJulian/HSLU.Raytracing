@@ -31,10 +31,8 @@ for (int y = 0; y < height; y++)
             Vector3 normal = Vector3.Normalize(new Vector3(dx, dy, z));
             float brightness = MathF.Max(Vector3.Dot(normal, lightDir), 0);
 
-            // Apply ambient light
             brightness = ambient + (1 - ambient) * brightness;
 
-            // Convert brightness to grayscale color
             byte intensity = (byte)(brightness * 255);
             bitmap[x, y] = new Rgba32(intensity, intensity, intensity);
         }
@@ -45,6 +43,5 @@ for (int y = 0; y < height; y++)
     }
 }
 
-// Save image
 bitmap.SaveAsPng(filePath);
 Console.WriteLine($"3D Sphere image saved to {filePath}");

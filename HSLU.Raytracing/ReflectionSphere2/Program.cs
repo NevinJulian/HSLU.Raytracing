@@ -11,13 +11,8 @@ namespace SpheresRender
             const int height = 900;
             const string filePath = "gray_green_cube_scene.png";
 
-            // Create scene
             var scene = new Scene();
-
-            // Set up the camera - positioned to capture the three objects
             var camera = new Camera(new Vector3D(0, 1.5, -5.0));
-
-            // Create materials for each object
 
             // Gray sphere material - silver-like with high reflectivity
             var graySphereaterial = new Material(
@@ -124,7 +119,6 @@ namespace SpheresRender
                 0.5f                         // Medium intensity
             ));
 
-            // Create render settings with optimal parameters
             var settings = new RenderSettings
             {
                 Width = width,
@@ -135,7 +129,6 @@ namespace SpheresRender
                 NumThreads = Environment.ProcessorCount
             };
 
-            // Create ray tracer and render the scene
             var rayTracer = new RayTracer();
             Console.WriteLine("Starting rendering...");
             rayTracer.RenderScene(scene, camera, settings);

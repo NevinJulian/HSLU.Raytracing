@@ -15,16 +15,13 @@
 
         public (bool hit, Vector3D intersection) IntersectRay(Vector3D rayOrigin, Vector3D rayDirection)
         {
-            // Calculate dot product between normal and ray direction
             float dotProduct = Normal.Dot(rayDirection);
 
-            // If ray is parallel to the plane
             if (Math.Abs(dotProduct) < 1e-6)
             {
                 return (false, new Vector3D(0, 0, 0));
             }
 
-            // Calculate distance to plane
             Vector3D toPoint = new Vector3D(
                 Point.X - rayOrigin.X,
                 Point.Y - rayOrigin.Y,
@@ -33,13 +30,11 @@
 
             float t = Normal.Dot(toPoint) / dotProduct;
 
-            // If plane is behind the ray
             if (t < 0)
             {
                 return (false, new Vector3D(0, 0, 0));
             }
 
-            // Calculate intersection point
             Vector3D intersection = new Vector3D(
                 rayOrigin.X + t * rayDirection.X,
                 rayOrigin.Y + t * rayDirection.Y,
@@ -51,7 +46,6 @@
 
         public Vector3D GetNormal(Vector3D intersectionPoint)
         {
-            // For a plane, the normal is constant
             return Normal;
         }
     }

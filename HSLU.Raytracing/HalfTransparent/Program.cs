@@ -11,13 +11,8 @@ namespace SpheresRender
             const int height = 900;
             const string filePath = "colored_room_solid_objects.png";
 
-            // Create scene
             var scene = new Scene();
-
-            // Set up the camera - positioned to view inside the room
             var camera = new Camera(new Vector3D(0, 0, -3.0));
-
-            // Create materials for each object and wall
 
             // Solid silver sphere material (minimal reflectivity)
             var silverSphereMaterial = new Material(
@@ -108,8 +103,6 @@ namespace SpheresRender
                 0.0f,                         // No reflectivity
                 0.0f                          // No transparency
             );
-
-            // Add objects to the scene
 
             // Left sphere (solid silver, minimal reflection)
             scene.AddObject(new Sphere(
@@ -213,7 +206,6 @@ namespace SpheresRender
                 yellowWallMaterial
             ));
 
-            // Set up lighting to illuminate the room
             // Main light from behind camera
             scene.AddLight(new Light(
                 new Vector3D(0, 0, -2.5),
@@ -255,18 +247,16 @@ namespace SpheresRender
                 0.15f                          // Very focused intensity
             ));
 
-            // Create render settings with optimal parameters
             var settings = new RenderSettings
             {
                 Width = width,
                 Height = height,
-                MaxReflectionDepth = 4,       // Reduced depth since we have minimal reflections
+                MaxReflectionDepth = 4,
                 OutputFilename = filePath.Replace(".png", ""),
                 OutputFormat = "png",
                 NumThreads = Environment.ProcessorCount
             };
 
-            // Create ray tracer and render the scene
             var rayTracer = new RayTracer();
             Console.WriteLine("Starting rendering...");
             rayTracer.RenderScene(scene, camera, settings);

@@ -21,10 +21,8 @@ static bool IsInSphere(Vector2D pixel, Vector3D sphereCenter, int radius)
     return (dx * dx + dy * dy) <= Math.Pow(radius, 2);
 }
 
-// Create a SkiaSharp bitmap (raster surface)
 var bitmap = new Image<Rgba32>(width, height);
 
-// Get the pixel buffer
 for (int y = 0; y < height; y++)
 {
     for (int x = 0; x < width; x++)

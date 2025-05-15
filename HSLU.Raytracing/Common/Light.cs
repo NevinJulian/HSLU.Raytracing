@@ -10,7 +10,7 @@
         {
             Position = position;
             Color = color;
-            Intensity = Math.Clamp(intensity, 0f, 1f); // Clamp intensity between 0 and 1
+            Intensity = Math.Clamp(intensity, 0f, 1f);
         }
     }
 }

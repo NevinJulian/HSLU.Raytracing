@@ -52,7 +52,6 @@ namespace Common
 
         public bool Intersect(Ray ray)
         {
-            // Compute intersection with all three slabs
             float tx1 = (Min.X - ray.Origin.X) / ray.Direction.X;
             float tx2 = (Max.X - ray.Origin.X) / ray.Direction.X;
 
@@ -129,7 +128,7 @@ namespace Common
             float yExtent = box.Max.Y - box.Min.Y;
             float zExtent = box.Max.Z - box.Min.Z;
 
-            int axis = 0; // 0 = x, 1 = y, 2 = z
+            int axis = 0;
             if (yExtent > xExtent) axis = 1;
             if (zExtent > (axis == 0 ? xExtent : yExtent)) axis = 2;
 

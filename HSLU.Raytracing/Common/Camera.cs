@@ -16,7 +16,6 @@
 
         public Ray CreateRay(float nx, float ny)
         {
-            // nx and ny are normalized screen coordinates
             Vector3D direction = new Vector3D(nx, ny, 1).Normalize();
             return new Ray(position, direction);
         }

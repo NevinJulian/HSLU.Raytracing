@@ -4,7 +4,6 @@
     {
         public static void AddRoom(OptimizedScene scene, Vector3D center, float width, float height, float depth, Material material)
         {
-            // Calculate room dimensions
             float halfWidth = width / 2;
             float halfHeight = height / 2;
             float halfDepth = depth / 2;
